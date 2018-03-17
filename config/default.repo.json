@@ -1,0 +1,14 @@
+{
+	"commit": {
+		"dist": "experimental",
+		"arches": ["amd64"]
+	},
+	"release": {
+		"dist": "unstable",
+		"arches": ["amd64", "i386", "source"]
+	},
+	"release-candidate": {
+		"dist": "unstable",
+		"arches": ["amd64", "i386", "source"]
+	}
+}

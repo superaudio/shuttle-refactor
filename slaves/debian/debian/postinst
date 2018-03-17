@@ -1,0 +1,8 @@
+#!/bin/sh
+adduser --system --quiet --disabled-password --group shuttle-slave
+chown shuttle-slave:shuttle-slave /home/shuttle-slave -R
+gpasswd -a shuttle-slave sudo
+
+chmod +x /usr/share/shuttle/slaves/debian/tools/*
+
+#DEBHELPER#

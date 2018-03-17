@@ -1,0 +1,65 @@
+#!/bin/bash
+
+BUILDID=$1; shift
+declare -a PBCMDLINE
+
+PBCMDLINE+=("--architecture" ${ARCH})
+PBCMDLINE+=("--distribution" ${DIST})
+PBCMDLINE+=("--no-targz")
+PBCMDLINE+=("--allow-untrusted")
+PBCMDLINE+=("--autocleanaptcache")
+
+while [ -n "$1" ];do
+    case "$1" in
+        --debug)
+            PBCMDLINE+=("--debug")
+            set -x
+            shift
+            ;;
+        --configfile)
+            if [ ! -f "$2" ];then
+                echo "E: Config file $2 does not exists."
+                exit 1
+            fi
+            . "$2"
+            shift 2
+            ;;
+        --save-after-login|--save)
+            SAVE_AFTER_EXIT="yes"
+            shift
+            ;;
+        *.dsc)
+            DSCFILE=$1
+            shift
+            ;;
+        --)
+            break
+            ;;
+        *)
+            PBCMDLINE+=("$1")
+            shift
+            ;;
+    esac
+done
+
+ACTUAL_NR_PROCESSORS=$(grep -c ^processor /proc/cpuinfo | sed 's/^0$/1/')
+NR_PROCESSORS=${ACTUAL_NR_PROCESSORS}
+echo "Initiating build $BUILDID with $NR_PROCESSORS jobs across $ACTUAL_NR_PROCESSORS processor cores."
+if [ ${NR_PROCESSORS} -gt 1 ]; then
+    export DEB_BUILD_OPTIONS="parallel=${NR_PROCESSORS}"
+fi
+
+if [ -d "${HOME}/build-${BUILDID}/chroot-autobuild-tmpfs" ];then
+    BUILDPLACE="${HOME}/build-${BUILDID}/chroot-autobuild-tmpfs"
+    export APTCACHEHARDLINK=no
+else
+    BUILDPLACE="${HOME}/build-${BUILDID}/chroot-autobuild"
+fi
+
+cd ${HOME}/build-${BUILDID}
+
+if [ ! -d ${BUILDPLACE} ];then
+    exit 101
+fi
+sudo -E pbuilder --update  --buildplace ${BUILDPLACE}  "${PBCMDLINE[@]}" || exit 1
+sudo -E pbuilder --build   --buildplace ${BUILDPLACE}  "${PBCMDLINE[@]}" ${DSCFILE}

@@ -1,0 +1,17 @@
+{
+	"commit": {
+		"quilt": false,
+		"pkgver": "git describe --tags --long %(ref)s | sed s/-/+/g",
+		"dist": "experimental"
+	},
+	"release": {
+		"quilt": true,
+		"pkgver": "git describe --abbrev=0 --tags %(ref)s",
+		"dist": "unstable"
+	},
+	"release-candidate": {
+		"quilt": true,
+		"pkgver": "echo $(git describe --abbrev=0 --tags %(ref)s)~next",
+		"dist": "unstable"
+	}
+}

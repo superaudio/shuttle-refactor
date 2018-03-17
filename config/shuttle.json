@@ -1,0 +1,28 @@
+{
+    "http": {
+        "ip"        : "0.0.0.0",
+        "port"      : "9998",
+        "templates" : "templates",
+        "statics"   : "statics"
+    },
+    "cache": {
+        "sources" : "/tmp/cache/git-repo",
+        "tasks"   : "/tmp/cache/tasks"
+    },
+    "log": {
+        "file": "/tmp/log.log",
+        "time_format": ""
+    },
+    "runtime": {
+        "debug"  : true,
+        "title"  : "Shuttle",
+        "database_uri": "sqlite:///tmp/shuttle.sqlite",
+        "secret_token": "hello,world!"
+    },
+    "notify": {
+        "bearychat": {
+            "enable": true,
+            "bearychat_url": ""
+        } 
+    }
+}

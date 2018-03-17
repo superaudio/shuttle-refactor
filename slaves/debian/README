@@ -1,0 +1,2 @@
+* You should add lintian hooks to pbuilder
+  AT /usr/share/doc/pbuilder/examples/B90lintian

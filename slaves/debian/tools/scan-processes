@@ -1,0 +1,27 @@
+#!/bin/bash
+
+BUILDID=$1
+REALHOME=$(cd $HOME && pwd -P)
+
+set -e 
+exec 2>&1
+
+echo "Scanning for processes to kill to build ${BUILDID}..."
+
+PREFIX="build-$BUILDID"
+FOUND=0
+
+for ROOT in /proc/*/cwd;do
+    LINK=$(sudo readlink $ROOT || true)
+    if [ x"$LINK" != "x" ];then
+	if [ x"$(basename ${LINK})" = "x$PREFIX" ]; then
+            PID=$(basename $(dirname "$ROOT"))
+            sudo kill -9 "$PID" || true
+            FOUND=1
+        fi
+    fi
+done
+
+if [ "x$FOUND" = "x1" ];then
+    exec $0 $1
+fi

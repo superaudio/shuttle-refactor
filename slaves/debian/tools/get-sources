@@ -1,0 +1,31 @@
+#!/bin/bash
+echo "Start build at $(date '+%x %X')"
+lsb_release -a
+
+set -e
+BUILDID=$1
+BASEURL=$2
+TARBALL=$3
+SOURCEID=$4
+DSCFILE=$5
+pkgname=$(echo ${DSCFILE} | awk -F'_' '{print $1}')
+
+exec 2>&1
+#BUILDCHROOT ${HOME}/build-${BUILDID}/chroot-autobuild/
+cd ${HOME}
+mkdir -p build-${BUILDID}
+
+echo "Fetching builder runtime: ${TARBALL}"
+echo wget -q -t 3 -O "build-${BUILDID}/base.tgz" "${BASEURL}/pbuilder/${TARBALL}" 
+wget -q -t 3 -O "build-${BUILDID}/base.tgz" "${BASEURL}/pbuilder/${TARBALL}" || { echo "Fetch runtime failed"; exit 1; }
+
+cd ${HOME}/build-${BUILDID}
+dget -q -ud "${BASEURL}/cache/debian-package/${SOURCEID}/source/${DSCFILE}"
+
+if [ ! -z ${ADD_SUFFIX} ];then
+    echo "Add suffix to generate new changelog and dsc file."
+    dpkg-source -x ${DSCFILE}
+    SOURCE=$(find . -mindepth 1 -maxdepth 1 -type d)
+    sed -i "s/)/~${ADD_SUFFIX})/" ${SOURCE}/debian/changelog
+    dpkg-source -b ${SOURCE}
+fi

@@ -1,0 +1,16 @@
+[Unit]
+Description=Shuttle Build Slave for %I
+After=network.target
+
+[Service]
+Type=simple
+User=shuttle-slave
+Group=shuttle-slave
+WorkingDirectory=/home/shuttle-slave
+ExecStart=python /usr/share/shuttle/slaves/debian/debian-slave.py
+Restart=always
+Environment="SHUTTLE_SLAVE_CONFIG=/etc/shuttle/%i.conf"
+
+[Install]
+WantedBy=multi-user.target
+

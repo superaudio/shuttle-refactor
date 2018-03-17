@@ -1,0 +1,6 @@
+{
+	"dde-session-ui":{
+		"source": "https://cr.deepin.io/dde/dde-session-ui#branch=master",
+		"debian": "https://cr.deepin.io/dde/dde-session-ui#branch=master"
+	}
+}

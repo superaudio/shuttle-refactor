@@ -1,0 +1,12 @@
+Source: shuttle-debian-slave
+Section: devel
+Priority: optional
+Maintainer: Deepin Sysdev <sysdev@deepin.com>
+Build-Depends: debhelper (>= 9), dh-systemd
+Standards-Version: 3.9.6
+
+Package: shuttle-debian-slave
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, sudo, pbuilder,
+ python-requests, python-twisted, devscripts
+Description: Shuttle debian slave

@@ -1,0 +1,29 @@
+#!/bin/sh
+
+BUILDID="$1"
+OVERLAY=${2:-"none"}
+
+set -e
+
+cd $HOME
+mkdir -p "build-$BUILDID/chroot-autobuild"
+echo "Unpacking chroot for build ${BUILDID}"
+sudo tar -xf build-${BUILDID}/base.tgz -C  build-${BUILDID}/chroot-autobuild
+
+if [ x"$OVERLAY" != "xtmpfs" ];then
+    exit 0
+else
+    sudo modprobe overlay -q || true
+fi
+
+if ! grep -q overlay /proc/filesystems;then
+    echo "Error: no overlay support"
+    exit 0
+fi
+
+sudo mkdir -p /dev/shm/build-${BUILDID}-shm 
+sudo mkdir -p /dev/shm/build-${BUILDID}-work
+
+mkdir -p "build-${BUILDID}/chroot-autobuild-tmpfs"
+
+sudo mount -t overlay overlay -o lowerdir=${HOME}/build-${BUILDID}/chroot-autobuild,upperdir=/dev/shm/build-${BUILDID}-shm,workdir=/dev/shm/build-${BUILDID}-work ${HOME}/build-${BUILDID}/chroot-autobuild-tmpfs
