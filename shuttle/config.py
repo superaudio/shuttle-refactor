@@ -5,7 +5,7 @@ import json
 
 def load_config():
     SHUTTLE_CONFIG = os.environ.get("SHUTTLE_CONFIG", 
-        "config/shuttle.json")
+        "../config/shuttle.json")
     with open(SHUTTLE_CONFIG) as fp:
         config = json.loads(fp.read())
     

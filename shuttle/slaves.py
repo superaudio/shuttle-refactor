@@ -142,7 +142,7 @@ class BuilderSlave():
             self.status = {}
 
 
-class ShuttleBuildersDaemon(threading.Thread):
+class ShuttleBuilders(threading.Thread):
 
     slaves = []
     _instance = None
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     sqlobject.sqlhub.processConnection = sqlconnection
     Package.createTable(ifNotExists=True)
     Job.createTable(ifNotExists=True)
-    daemon = ShuttleBuildersDaemon()
+    daemon = ShuttleBuilders()
     slave = BuilderSlave('debian-builder-01', 'http://10.0.10.29:8221/')
     daemon.register_slave(slave)
     daemon.daemon()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import os
 import subprocess
@@ -61,8 +61,7 @@ class GitBuilder():
         '''Config is a dict, like as
         {
             "source": "https://cr.deepin.io/dde/dde-daemon#branch=master",
-            "debian": "https://cr.deepin.io/dde/dde-daemon#branch=debian",
-            "builder": "default"
+            "debian": "https://cr.deepin.io/dde/dde-daemon#branch=debian"
         }
         '''
         self.pkgname = pkgname
@@ -149,10 +148,15 @@ class GitBuilder():
     def initial(self):
         try:
             self.source = self.config['source']
-            self.debian = self.config['debian']
+            if self.config.get('debian'):
+                self.debian = self.config['debian']
+            else:
+                self.debian = self.source
         except Exception as e:
-            return 
-            #raise OSError("config error: %s not exists" % e)
+            raise OSError("config error: %s not exists" % e)
+
+        if not os.path.exists(self._cache):
+            os.makedirs(self._cache)
 
         self.source_url, self.source_ref = self.parser_url(self.source)
         self.debian_url, self.debian_ref = self.parser_url(self.debian)
@@ -248,8 +252,8 @@ class GitBuilder():
         json_config = os.path.join(temp_dir, self.pkgname, '.release.json')
 
         if not os.path.exists(json_config):
-            json_config = os.path.join(os.path.join(ShuttleConfig().get('build', 'configdir'), 
-                "default.release.json"))
+            #TODO: fix default release json file found
+            json_config = os.path.join("../config", "default.release.json")
         
         with open(json_config, "r") as fp:
             config = json.load(fp)
@@ -308,7 +312,7 @@ class GitBuilder():
             _pkgver, _revision, _dir, _files = self._archive(temp_dir, action=action, ref=ref, version=version)
         except Exception as e:
             os.system("rm -rf %s" % temp_dir)
-            return {'version': None, 'message': str(e)}
+            sys.exit(1)
 
         return {'version': _pkgver, 'path': _dir, 'files': _files, 'hashsum': _revision}
 

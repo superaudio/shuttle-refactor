@@ -49,7 +49,6 @@ UploadStatus = Enumeration([
 JobFailedStatus = (
     JobStatus.SOURCE_FAILED,
     JobStatus.BUILD_FAILED,
-    JobStatus.POST_BUILD_FAILED,
     JobStatus.FAILED
 )
 
@@ -71,6 +70,7 @@ class Package(threading.Thread, sqlobject.SQLObject):
     priority       = sqlobject.StringCol(default=None)
     jobs           = sqlobject.MultipleJoin('Job', joinColumn='package_id')
 
+    triggered      = sqlobject.IntCol(default=1)
     upload_status  = sqlobject.IntCol(default=UploadStatus.UNKNOWN)
     status_changed = sqlobject.DateTimeCol(default=sqlobject.DateTimeCol.now())
 

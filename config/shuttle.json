@@ -22,7 +22,8 @@
     "notify": {
         "bearychat": {
             "enable": true,
-            "bearychat_url": ""
+            "bearychat_url": "",
+			"message_template": "${pkgname}s - ${pkgver}s to ${reponame}s [%{status}s]"
         } 
     }
 }
