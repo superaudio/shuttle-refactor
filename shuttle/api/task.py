@@ -2,12 +2,14 @@ from twisted.web import resource, server
 from twisted.internet import defer, threads
 
 import json
+import os
 import subprocess
 import traceback
 from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
 
 from models import Package
+from config import config
 
 def deunicodify_hook(pairs):
     new_pairs = []
@@ -50,8 +52,16 @@ class Task(APIResource):
             }
 
             try:
+                """result will like blow
+                {'files': 
+                    ['dde-session-ui_4.3.1+2+gc1ab148.dsc', 
+                    'dde-session-ui_4.3.1+2+gc1ab148.tar.xz'], 
+                'path': '/tmp/git-archive-temp/tmp3HoN4D',
+                'version': '4.3.1+2+gc1ab148', 
+                'hashsum': 'c1ab1484818011ab76bbe383101b25d33e923ef4'
+                }
+                """
                 result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
-                print(result)
             except:
                 raise
             
@@ -69,7 +79,19 @@ class Task(APIResource):
             else:
                 package = Package(**kwargs)
             
-            return package.id
+                #save the source to cache
+                tasks_cache = config['cache'].get('tasks')
+                if not os.path.exists(tasks_cache):
+                    os.makedirs(tasks_cache)
+                source_cache = os.path.join(tasks_cache, str(package.id), 'source')
+                for file in result['files']:
+                    os.system("install -Dm644 %(source)s %(dest)s" % {
+                        'source': os.path.join(result['path'], file),
+                        'dest': os.path.join(source_cache, file)
+                        })
+                    
+            os.system("rm -rf %s" % result['path'])
+            return kwargs
         
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)
