@@ -91,6 +91,15 @@ class Package(threading.Thread, sqlobject.SQLObject):
             self.status_changed = sqlobject.DateTimeCol.now()
 
         sqlobject.SQLObject.__setattr__(self, name, value)
+    
+    def dict(self):
+        result = {
+            "pkgname": self.pkgname, "pkgver": self.pkgver, "reponame": self.reponame,
+            "action": self.action, "hashsum": self.hashsum, "expired": self.expired,
+            "priority": self.priority, "triggered": self.triggered, 
+            "upload_status": self.upload_status, "status_changed": str(self.status_changed)
+        }
+        return result
 
     @staticmethod
     def version_compare(a, b):

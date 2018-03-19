@@ -91,7 +91,7 @@ class Task(APIResource):
                         })
                     
             os.system("rm -rf %s" % result['path'])
-            return kwargs
+            return package.dict()
         
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)
@@ -109,10 +109,12 @@ class Task(APIResource):
         }
         '''
         def get_result():
-            return {'id': id}
+            package = Package.selectBy(id=id)[0]
+            return package.dict()
         
         d = threads.deferToThread(get_result)
-        d.addBoth(self.callback, request)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
 
     def callback(self, result, request):
