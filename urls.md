@@ -6,3 +6,6 @@ curl -i -X POST -F "reponame=dde" -F "config=@config/default.repo.json" http://1
 
 # create release-candidate division repo
 curl -i -H 'Content-Type: application/json' -X POST --data-binary '{"action":"create","division":"3302","reponame":"dde", "baserepo":"release-candidate"}' http://127.0.0.1:5000/api/repo/division
+
+# destroy repo by uri
+curl -i -H 'Content-Type: application/json' -X POST --data-binary '{"action":"destroy","repouri":"dde/release-candidate/3302"}' http://127.0.0.1:5000/api/repo/destroy

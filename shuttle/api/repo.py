@@ -24,21 +24,21 @@ class Repo(APIResource):
                             'CONTENT_TYPE': headers['content-type'],}
                 )
 
-            repo_name = content['reponame'].value
+            repo_uri = content['reponame'].value
             repo_base = config['cache']['repos']
-            repo_json = os.path.join(repo_base, repo_name, '%s.json' % repo_name)
+            repo_json = os.path.join(repo_base, repo_uri, '%s.json' % repo_uri)
             if os.path.exists(repo_json):
                 raise OSError("repo has already created.")
 
-            if not os.path.exists(os.path.join(repo_base, repo_name)):
-                os.makedirs(os.path.join(repo_base, repo_name))
+            if not os.path.exists(os.path.join(repo_base, repo_uri)):
+                os.makedirs(os.path.join(repo_base, repo_uri))
 
             with open(repo_json, 'w') as fp:
                 fp.write(content['config'].value)
             
             env = os.environ.copy()
             env['REPOPATH'] = repo_base
-            env['NAME'] = repo_name
+            env['NAME'] = repo_uri
 
             return dict(zip(['status', 'message'], getstatusoutput(command, env=env)))
 
@@ -51,12 +51,12 @@ class Repo(APIResource):
     def post_subcreate(self, request):
         def get_result():
             content = json.loads(request.content.read())
-            repo_name = content['reponame']
+            repo_uri = content['reponame']
             division_name = content['division']
             base_repo = content['baserepo']
 
             repo_base = config['cache']['repos']
-            repo_json = os.path.join(repo_base, repo_name, '%s.json' % repo_name)
+            repo_json = os.path.join(repo_base, repo_uri, '%s.json' % repo_uri)
 
             if not os.path.exists(repo_json):
                 raise OSError("repo is not created.")
@@ -66,7 +66,7 @@ class Repo(APIResource):
             
             env = os.environ.copy()
             env['REPOPATH'] = repo_base
-            env['NAME'] = repo_name
+            env['NAME'] = repo_uri
 
             command = "../tools/repo.py division --base %(base)s --division %(division)s" % {
                     "base": base_repo,
@@ -75,6 +75,31 @@ class Repo(APIResource):
             return dict(zip(['status', 'message'], getstatusoutput(command, env=env)))
 
 
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+    
+    @POST('/destroy')
+    def post_destory(self, request):
+        def get_result():
+            content = json.loads(request.content.read())
+            repo_uri = content['repouri']
+            if repo_uri is None:
+                raise OSError("reponame should not be none")
+
+            repo_base = config['cache']['repos']
+            
+                
+            repo_path = os.path.join(repo_base, repo_uri)
+
+            if os.path.exists(repo_path):
+                return dict(zip(['status', 'message'], 
+                    getstatusoutput("rm -r %s" % repo_path, env=env)
+                ))
+            else:
+                return dict(zip(['status', 'message'], [1, "%s is not exists" % repo_uri]))
+        
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
