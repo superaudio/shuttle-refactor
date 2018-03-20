@@ -7,7 +7,8 @@
     },
     "cache": {
         "sources" : "/tmp/cache/git-repo",
-        "tasks"   : "/tmp/cache/tasks"
+        "tasks"   : "/tmp/cache/tasks",
+        "repos"   : "/tmp/cache/repos"
     },
     "log": {
         "file": "/tmp/log.log",

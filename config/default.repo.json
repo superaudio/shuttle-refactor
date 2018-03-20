@@ -8,6 +8,7 @@
 		"arches": ["amd64", "i386", "source"]
 	},
 	"release-candidate": {
+		"division": true,
 		"dist": "unstable",
 		"arches": ["amd64", "i386", "source"]
 	}

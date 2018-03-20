@@ -57,7 +57,7 @@ class Dch():
 
 
 class GitBuilder():
-    def __init__(self, pkgname, config, cache_dir="/tmp/cache"):
+    def __init__(self, pkgname, config, cache_dir):
         '''Config is a dict, like as
         {
             "source": "https://cr.deepin.io/dde/dde-daemon#branch=master",
@@ -321,6 +321,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--pkgname", required=True)
+    parser.add_argument("--cachedir", default="/tmp/cache")
     parser.add_argument("--action", required=True, help="[release, commit, release-candidate] is support")
     parser.add_argument("--version")
 
@@ -332,6 +333,6 @@ if __name__ == "__main__":
     json_config = json.load(open(args.config, 'r'))
 
     config = json_config.get(args.pkgname)
-    g = GitBuilder(pkgname=args.pkgname, config=config)
+    g = GitBuilder(pkgname=args.pkgname, config=config, cache_dir=args.cachedir)
     result = g.archive(action=args.action, version=args.version)
     print(result)

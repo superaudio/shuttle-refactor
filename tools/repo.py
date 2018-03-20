@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import shutil
 import sys
@@ -41,56 +43,75 @@ class Repository():
     def __init__(self, repo_path, name):
         self.name = name
         self.repo_path = repo_path
-
-        configfile = os.path.join('config', '%s.json' % name)
-        if not os.path.exists(configfile):
-            raise Repository("Repository has not exists, Please create it first!")
+        config = os.path.join(repo_path, name, "%s.json" % name)
+        if not os.path.exists(config):
+            raise Repository("Repository config file: %s has not exists, Please create it first." % config)
         
-        self.config = json.load(open(configfile, "r"))
+        self.config = json.load(open(config, "r"))
             
-    def _reprepro(self, action, args):
-        repo_path = os.path.join(self.repo_path, self.name, action)
-        _lock = os.path.join(repo_path, 'conf', '.repository.lock')
+    def _reprepro(self, basepath, args):
+        _lock = os.path.join(basepath, 'conf', '.repository.lock')
         with LockContext(_lock):
             p = subprocess.Popen('reprepro -Vb. '+ args, shell=True, stdin=None, 
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=repo_path)
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=basepath)
             stdout = p.communicate()[0]
             return (p.returncode, stdout)
-    
+        
+    def _create(self, basepath, dist, arches):
+        if not os.path.exists(os.path.join(basepath, "conf")):
+            os.makedirs(os.path.join(basepath, "conf"))
+        config = os.path.join(basepath, "conf/distributions")
+        result = distribution_snippet % { "dist": dist, "arches": " ".join(arches), 
+                "uuid": uuid.uuid1()}
+        
+        with open(config, 'w') as fp:
+            fp.write(result)      
+
+        self._reprepro(basepath=basepath, args="export")
+
     def create(self):
         for key in self.config:
-            repo_path = os.path.join(self.repo_path, self.name, key)
-            if not os.path.exists(os.path.join(repo_path, "conf")):
-                os.makedirs(os.path.join(repo_path, "conf"))
-            
-            dist   = self.config[key].get('dist')
-            arches = self.config[key].get('arches')
-
-            config = os.path.join(repo_path, "conf/distributions")
-            result = distribution_snippet % { "dist": dist, "arches": " ".join(arches), 
-                "uuid": uuid.uuid1()}
-            with open(config, 'w') as fp:
-                fp.write(result)
-
-            self._reprepro(action=key, args="export")
+            basepath = os.path.join(self.repo_path, self.name, key)
+            if not self.config[key].get('division'):
+                dist   = self.config[key].get('dist')
+                arches = self.config[key].get('arches')
+                self._create(basepath=basepath, dist=dist, arches=arches)
+            else:
+                if not os.path.exists(basepath):
+                    os.makedirs(basepath)
     
-    def destroy(self, action):
-        repo_path = os.path.join(self.repo_path, self.name, action)
+    def division(self, base, name):
+        if not base in self.config:
+            raise RepositoryException("%s is not exists" % base)
+        if not self.config[base].get('division'):
+            raise RepositoryException("%s is not support division" % base)
+        
+        basepath = os.path.join(self.repo_path, self.name, base, name)
+        if os.path.exists(basepath):
+            raise RepositoryException("%s/%s is created." % (base, name))
+
+        dist   = self.config[base].get('dist')
+        arches = self.config[base].get('arches')
+        self._create(basepath=basepath, dist=dist, arches=arches)
+    
+    def destroy(self, base):
+        repo_path = os.path.join(self.repo_path, self.name, base)
         if os.path.exists(repo_path):
             shutil.rmtree(repo_path)
     
-    def remove_packages(self, action, sources):
+    def remove_packages(self, base, sources):
         args = "removesrc %s %s" % (self.dist, " ".join(sources))
-        return self._reprepro(action=action, args=args)
+        basepath = os.path.join(self.repo_path, self.name, base)
+        return self._reprepro(basepath=basepath, args=args)
 
-    def include_packages(self, cache_dir, action, skip_source=False):
+    def include_packages(self, cache_dir, base, skip_source=False):
         if not os.path.exists(cache_dir):
             raise RepositoryException("cache %s is not exists, Cannot include packages" % cache_dir)
 
         logfile = os.path.join(cache_dir, "log")
         if os.path.exists(logfile):
             os.remove(logfile)
-
+        
         with open(logfile, "a") as log:
             log.write("Start at %s\n\n" % sqlobject.DateTimeCol.now())
             arches = self.config[action].get('arches')
@@ -131,6 +152,7 @@ class Repository():
 
             log.write("Finished at %s\n" % sqlobject.DateTimeCol.now())
 
+
 class FakeRepository():
     def __init__(self):
         """
@@ -140,7 +162,7 @@ class FakeRepository():
         name = os.environ.get('NAME')
 
         if repo_path is None or name is None:
-            print("<REPOPATH> <NAME> should exists")
+            print("<REPOPATH> <NAME> <CONFIG> should exists")
             sys.exit(1)
 
         parser = argparse.ArgumentParser(
@@ -158,13 +180,29 @@ class FakeRepository():
         
         getattr(self, args.command)()
     
+    def division(self):
+        parser = argparse.ArgumentParser(
+            description='create the repository'
+            )
+        parser.add_argument('--base', required=True)
+        parser.add_argument('--division', required=True)
+
+        args = parser.parse_args(sys.argv[2:])
+        try:
+            self.repo.division(base=args.base, name=args.division)
+        except RepositoryException as e:
+            print("Error: %s" % e)
+            sys.exit(1)
+    
     def create(self):
         parser = argparse.ArgumentParser(
             description='create the repository'
             )
         args = parser.parse_args(sys.argv[2:])
-
-        self.repo.create()
+        try:
+            self.repo.create()
+        except Exception as e:
+            print("Error: create error - %s" % e)
     
     def include(self):
         parser = argparse.ArgumentParser(
