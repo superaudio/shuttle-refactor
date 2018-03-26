@@ -7,18 +7,7 @@ import json
 class DashboardView(resource.Resource):
     isLeaf = True
     loader = Jinja2TemplateLoader('templates')
-    htmls = ['html', '']
-    def set_defaults(self, request, html=False):
-        request.setHeader('Access-Control-Allow-Origin', '*')
-        if html:
-            request.setHeader('Content-Type', 'text/html; charset=utf-8')
-        elif b'format' in request.args and request.args[b'format'][
-                0] == b'json':
-            request.args[b'format'] = b'json'
-            request.setHeader('Content-Type', 'text/json; charset=utf-8')
-        else:
-            request.setHeader('Content-Type', 'text/html; charset=utf-8')
-    
+
     def render_GET(self, request):
         workers = {
             "dummy-01@localhost": {'hostname': 'dummy-01@localhost', 'status': 1, 'loadavg': ['1,3,4']},

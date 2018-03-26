@@ -21,7 +21,7 @@ class Repo(APIResource):
                 fp = request.content,
                 headers = headers,
                 environ = {'REQUEST_METHOD':'POST',
-                            'CONTENT_TYPE': headers['content-type'],}
+                        'CONTENT_TYPE': headers['content-type'],}
                 )
 
             repo_uri = content['reponame'].value
@@ -99,6 +99,18 @@ class Repo(APIResource):
                 ))
             else:
                 return dict(zip(['status', 'message'], [1, "%s is not exists" % repo_uri]))
+        
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
+    @ALL('/list')
+    def list_repo(self, request):
+        def get_result():
+            #TODO:
+            content = json.loads(request.content.read())
+            return content
         
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)
