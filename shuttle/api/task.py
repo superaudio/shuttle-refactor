@@ -48,6 +48,22 @@ def add_task(kwargs):
 class Task(APIResource):
     isLeaf = False
 
+    @GET('/demo')
+    def demo(self, request):
+        def get_result():
+            kwargs = {
+                'pkgname': 'dummy', 'pkgver': '1.0',
+                'reponame': 'reponame', 'action': 'action',
+                'hashsum': 'hashsum'
+                }
+            for i in range(100):
+                Package(**kwargs)
+            return {'message':'done'}
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
     @POST('/apply')
     def post_apply(self, request):
         '''
@@ -121,7 +137,6 @@ class Task(APIResource):
                 'reponame': content['reponame'], 'action': content['action'],
                 'hashsum': result['hashsum']
                 }
-
             if Package.selectBy(**kwargs).count() != 0:
                 package = Package.selectBy(**kwargs).orderBy('-id')[0]
                 package.triggered = package.triggered + 1
@@ -170,12 +185,24 @@ class Task(APIResource):
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
-
-    @GET('/list')
-    def get_jobs(self, request):
+    
+    @GET('/total')
+    def get_total_jobs(self, request):
         def get_result():
+            total =  Package.selectBy().orderBy("-id").count()
+            return {'total': total}
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
+    @GET('/list/(?P<page>[^/]+)')
+    def get_jobs(self, request, page):
+        page = int(page)
+        def get_result():
+            limit = 25
             contexts = []
-            packages = Package.selectBy().orderBy("-id")
+            packages = Package.selectBy().orderBy("-id")[(page - 1)*limit : page * limit]
             for package in packages:
                 result = package.dict()
                 jobs = Job.selectBy(packageID=package.id)

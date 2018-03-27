@@ -5,7 +5,6 @@ import threading
 
 from packaging import version
 
-
 class Enumeration:
     def __init__(self, enumlist):
         self.lookup = {}
