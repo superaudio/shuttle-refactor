@@ -2,7 +2,6 @@
 
 import os
 import json
-import subprocess
 
 def load_config():
     SHUTTLE_CONFIG = os.environ.get("SHUTTLE_CONFIG", 
@@ -13,12 +12,3 @@ def load_config():
     return config
 
 config = load_config()
-
-def getstatusoutput(commands, cwd=None, env=None):
-    p = subprocess.Popen(commands, shell=True, stdin=None, 
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-        cwd=cwd, env=env)
-    stdout = p.communicate()[0]
-    if stdout.endswith('\n'):
-        stdout = stdout[:-1]
-    return (p.returncode, stdout)

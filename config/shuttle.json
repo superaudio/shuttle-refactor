@@ -11,6 +11,7 @@
     "runtime": {
         "ip"     : "0.0.0.0",
         "port"   : 5000,
+        "repo_url" : "http://127.0.0.1/repos",
         "debug"  : true,
         "title"  : "Shuttle",
         "database_uri": "sqlite:///tmp/shuttle.sqlite",

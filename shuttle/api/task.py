@@ -12,9 +12,9 @@ from models import Package, Job
 from models import JobStatus
 from config import config
 
-def parser_dscfile(dscfile):
+def parser_dscfile(dsc_file):
     #Just support linux architecture
-    arches = {}
+    arches = set()
     with open(dsc_file) as fp:
         for line in fp:
             if line.startswith('Architecture: '):
@@ -46,7 +46,7 @@ def add_task(kwargs):
         package = package(**kwargs)
 
 class Task(APIResource):
-    isLeaf = False  
+    isLeaf = False
 
     @POST('/apply')
     def post_apply(self, request):
@@ -59,7 +59,7 @@ class Task(APIResource):
         }
         '''
         request.setHeader("content-type", "application/json")
-        
+
         def get_result():
             content = json.loads(request.content.read(), object_pairs_hook=deunicodify_hook)
             # first will checkif the repo exists
@@ -67,10 +67,11 @@ class Task(APIResource):
             repo_config = os.path.join(repopath, '%s.json' % content['reponame'])
             if not os.path.exists(repo_config):
                 raise OSError("Repository has not exists, Please create it first!")
-            
+
             repo_config = json.load(open(repo_config, "r"))
             dist = repo_config.get(content['action'])['dist']
-            arches = repo_config.get(content['action'])['arches']
+            # filter the source from arches
+            arches = filter(lambda arch: arch != 'source', repo_config.get(content['action'])['arches'])
 
             command = "../tools/git.py --config ../config/default.packages.json"
             command += " --pkgname %(pkgname)s --action %(action)s --cachedir %(cache)s" % {
@@ -92,7 +93,7 @@ class Task(APIResource):
                 result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
             except:
                 raise
-            
+
             result = eval(result)
 
             for file in result['files']:
@@ -101,7 +102,7 @@ class Task(APIResource):
                     _arches = parser_dscfile(dsc_file)
                     break
 
-            added_arches = {}
+            added_arches = set()
             for arch in _arches:
                 if arch == 'any':
                     for repo_arch in arches:
@@ -116,7 +117,7 @@ class Task(APIResource):
                 raise OSError("None of architecture support with this action.")
 
             kwargs = {
-                'pkgname': content['pkgname'], 'pkgver': result['version'], 
+                'pkgname': content['pkgname'], 'pkgver': result['version'],
                 'reponame': content['reponame'], 'action': content['action'],
                 'hashsum': result['hashsum']
                 }
@@ -128,7 +129,7 @@ class Task(APIResource):
                 package = Package(**kwargs)
                 for arch in added_arches:
                     Job(package=package, arch=arch, dist=dist, status=JobStatus.WAIT)
-                
+
                 #save the source to cache
                 tasks_cache = config['cache'].get('tasks')
                 if not os.path.exists(tasks_cache):
@@ -139,10 +140,10 @@ class Task(APIResource):
                         'source': os.path.join(result['path'], file),
                         'dest': os.path.join(source_cache, file)
                         })
-                    
+
             os.system("rm -rf %s" % result['path'])
             return package.dict()
-        
+
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
@@ -160,12 +161,34 @@ class Task(APIResource):
         '''
         def get_result():
             package = Package.selectBy(id=id)[0]
-            return package.dict()
-        
+            result = package.dict()
+            jobs = Job.selectBy(packageID=package.id)
+            result['tasks'] = [ job.dict() for job in jobs]
+            return result
+
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
+
+    @GET('/list')
+    def get_jobs(self, request):
+        def get_result():
+            contexts = []
+            packages = Package.selectBy().orderBy("-id")
+            for package in packages:
+                result = package.dict()
+                jobs = Job.selectBy(packageID=package.id)
+                result['tasks'] = [ job.dict() for job in jobs]
+                contexts.append(result)
+            return {'data': contexts}
+
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
 
     def callback(self, result, request):
         request.setResponseCode(200)

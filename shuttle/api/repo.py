@@ -1,7 +1,8 @@
-from config import config, getstatusoutput
+from config import config
+import functions
+
 import os
 import json
-import subprocess
 
 from twisted.internet import defer, threads
 from twisted.web import resource, server
@@ -39,8 +40,8 @@ class Repo(APIResource):
             env = os.environ.copy()
             env['REPOPATH'] = repo_base
             env['NAME'] = repo_uri
-
-            return dict(zip(['status', 'message'], getstatusoutput(command, env=env)))
+            command = "../tools/repo.py create"
+            return dict(zip(['status', 'message'], functions.getstatusoutput(command, env=env)))
 
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)
@@ -108,9 +109,7 @@ class Repo(APIResource):
     @ALL('/list')
     def list_repo(self, request):
         def get_result():
-            #TODO:
-            content = json.loads(request.content.read())
-            return content
+            return functions.list_repo()
         
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)

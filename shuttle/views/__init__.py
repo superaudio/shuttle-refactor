@@ -15,7 +15,7 @@ class ViewsResource(resource.Resource):
         
         self.putChild("dashboard", dashboard.DashboardView())
         self.putChild("monitor", dashboard.MonitorView())
-        self.putChild("task", tasks.TaskView())
+        self.putChild("job", tasks.JobView())
         self.putChild("tasks", tasks.TasksView())
         self.putChild("repository", repository.RepoView())
 

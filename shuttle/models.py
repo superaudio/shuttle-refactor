@@ -63,6 +63,7 @@ class Package(threading.Thread, sqlobject.SQLObject):
     pkgver         = sqlobject.StringCol()
     reponame       = sqlobject.StringCol(default="default")
     action         = sqlobject.StringCol(default="commit")
+    build_args     = sqlobject.StringCol(default=None)
     
     hashsum        = sqlobject.StringCol(default=None)
     expired        = sqlobject.StringCol(default=None)
@@ -94,10 +95,12 @@ class Package(threading.Thread, sqlobject.SQLObject):
     
     def dict(self):
         result = {
+            "id": self.id,
             "pkgname": self.pkgname, "pkgver": self.pkgver, "reponame": self.reponame,
             "action": self.action, "hashsum": self.hashsum, "expired": self.expired,
             "priority": self.priority, "triggered": self.triggered, 
-            "upload_status": self.upload_status, "status_changed": str(self.status_changed)
+            "build_args":  self.build_args.split('|') if self.build_args else [],
+            "upload_status": UploadStatus.whatis(self.upload_status), "status_changed": str(self.status_changed)
         }
         return result
 
@@ -163,6 +166,16 @@ class Job(sqlobject.SQLObject):
             self.status_changed = sqlobject.DateTimeCol.now()
 
         sqlobject.SQLObject.__setattr__(self, name, value)
+
+    def dict(self):
+        result = {
+            "id": self.id, "task": "%s/%s" % (self.dist, self.arch),
+            "status": JobStatus.whatis(self.status), "dist": self.dist, "arch": self.arch,
+            "creation_date": str(self.creation_date), "build_host": self.build_host, 
+            "build_start": str(self.build_start), "build_end": str(self.build_end), 
+            "status_changed": str(self.status_changed)
+        }
+        return result
 
     def start(self, slave, builder):
         if self.status != JobStatus.WAIT_LOCKED:

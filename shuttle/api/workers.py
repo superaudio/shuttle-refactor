@@ -9,7 +9,7 @@ from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
 from slaves import ShuttleBuilders, BuilderSlave
 
-class ListWorkers(APIResource):
+class Workers(APIResource):
     isLeaf = False
 
     @ALL('/list')
@@ -27,31 +27,54 @@ class ListWorkers(APIResource):
                 }
             }
         '''
-        request.setHeader("content-type", "application/json")
-        def callback(result):
-            request.setResponseCode(200)
-            request.write(json.dumps(result))
-            request.finish()
-
-        def failure(result):
-            request.setResponseCode(400)
-            _result = {"state": "FAILED",
-                "message": result.getErrorMessage()
-            }
-            request.write(json.dumps(_result))
-            request.finish()
         
         def get_result():
-            result = {}
+            result = []
             for slave in ShuttleBuilders().slaves:
                 _result = {
-                    'name': slave.name, 'url': slave.url, 'enabled': slave.enabled,
-                    'status': slave.status, 'uploading': slave.uploading
+                    'hostname': slave.name, 'url': slave.url, 'enabled': slave.enabled,
+                    'status': slave.status.get('status'), 'uploading': slave.uploading, 'supports': ['debian']
                 }
-                result[slave.name] = _result
-            return result
+                result.append(_result)
+            return {'data': result}
         
         d = threads.deferToThread(get_result)
-        d.addCallback(callback)
-        d.addErrback(failure)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
+
+    @POST('/register')
+    def register_work(self, request):
+        content = json.loads(request.content.read())
+        name = content.get('name')
+        url = content.get('url')
+        def get_result():
+            if name is None or url is None:
+                return {'message': 'register slave failed.'}
+
+            slave = BuilderSlave(name, url)
+            ShuttleBuilders().register_slave(slave)
+            result = {
+                'hostname': slave.name, 'url': slave.url, 'enabled': slave.enabled,
+                'status': slave.status.get('status'), 'uploading': slave.uploading
+                }
+            return result
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
+    
+    def callback(self, result, request):
+        request.setResponseCode(200)
+        request.write(json.dumps(result))
+        request.finish()
+
+    def failure(self, result, request):
+        request.setResponseCode(400)
+        _result = {"state": "FAILED",
+            "message": result.getErrorMessage()
+        }
+        request.write(json.dumps(_result))
+        request.finish()

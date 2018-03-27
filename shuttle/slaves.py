@@ -183,6 +183,7 @@ class ShuttleBuilders(threading.Thread):
     def register_slave(self, slave):
         for _slave in self.slaves:
             if _slave.url == slave.url or _slave.name == slave.name:
+                print(slave.url, _slave.url)
                 return
         slave.active()
         self.slaves.append(slave)
