@@ -73,7 +73,7 @@ class Repo(APIResource):
                     "base": base_repo,
                     "division": division_name
             }
-            return dict(zip(['status', 'message'], getstatusoutput(command, env=env)))
+            return dict(zip(['status', 'message'], functions.getstatusoutput(command, env=env)))
 
 
         d = threads.deferToThread(get_result)
@@ -96,7 +96,7 @@ class Repo(APIResource):
 
             if os.path.exists(repo_path):
                 return dict(zip(['status', 'message'], 
-                    getstatusoutput("rm -r %s" % repo_path, env=env)
+                    functions.getstatusoutput("rm -r %s" % repo_path, env=env)
                 ))
             else:
                 return dict(zip(['status', 'message'], [1, "%s is not exists" % repo_uri]))

@@ -15,7 +15,7 @@ class JobView(resource.Resource):
         job = Job.selectBy(id=id)[0]
         result = job.dict()
         result.update(job.package.dict())
-        context = {'job': result }
+        context = {'jobid': id, 'job': result}
         request.setHeader('Content-Type', 'text/html; charset=utf-8')
         template = self.loader.load("job.html")
 

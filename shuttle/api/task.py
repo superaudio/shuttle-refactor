@@ -79,13 +79,26 @@ class Task(APIResource):
         def get_result():
             content = json.loads(request.content.read(), object_pairs_hook=deunicodify_hook)
             # first will checkif the repo exists
-            repopath =  os.path.join(config['cache'].get('repos'), content['reponame'])
-            repo_config = os.path.join(repopath, '%s.json' % content['reponame'])
+            reponame = content['reponame'].split('/')[0]
+            repopath =  os.path.join(config['cache'].get('repos'), reponame)
+            repo_config = os.path.join(repopath, '%s.json' % reponame)
             if not os.path.exists(repo_config):
                 raise OSError("Repository has not exists, Please create it first!")
 
             repo_config = json.load(open(repo_config, "r"))
-            dist = repo_config.get(content['action'])['dist']
+            action_config = repo_config.get(content['action'])
+            if not action_config:
+                raise OSError("Repository is not support this action.")
+            if action_config.get('division'):
+                if '/' not in content['reponame']:
+                    raise OSError("Reponame should like dde/1207")
+                #checkif the division created
+                division_path = os.path.join(repopath, content['action'], content['reponame'].split('/')[1], 
+                    'db/packages.db')
+                if not os.path.exists(division_path):
+                    raise OSError("Division repo is not created.")
+
+            dist = action_config['dist']
             # filter the source from arches
             arches = filter(lambda arch: arch != 'source', repo_config.get(content['action'])['arches'])
 
