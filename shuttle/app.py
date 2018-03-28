@@ -1,6 +1,7 @@
 from twisted.web import resource, server
 from twisted.internet import defer, reactor
 from twisted.web.static import File
+from twisted.internet.task import LoopingCall
 
 import sqlobject
 from config import config
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     import signal
     def handle_sigterm(signum, stack):
         print("Interrupted!. Exiting.")
-        ShuttleBuilders().do_quit.set()
+        builders.do_quit.set()
         for slave in ShuttleBuilders().slaves:
             slave.inactive()
         reactor.stop()
@@ -31,9 +32,12 @@ if __name__ == "__main__":
     Package.createTable(ifNotExists=True)
     Job.createTable(ifNotExists=True)
     site = server.Site(RootResource())
+    builders = ShuttleBuilders()
     
     signal.signal(signal.SIGTERM, handle_sigterm)
     signal.signal(signal.SIGINT, handle_sigterm)
+    loop_builders = LoopingCall(builders.loop)
+    loop_builders.start(10)
     
     reactor.listenTCP(config['runtime']['port'], site)
     reactor.run()

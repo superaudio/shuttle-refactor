@@ -33,7 +33,9 @@ class Workers(APIResource):
             for slave in ShuttleBuilders().slaves:
                 _result = {
                     'hostname': slave.name, 'url': slave.url, 'enabled': slave.enabled,
-                    'status': slave.status.get('status'), 'uploading': slave.uploading, 'supports': ['debian']
+                    'builder_status': slave.status.get('builder_status'), 
+                    'uploading': slave.uploading, 
+                    'builder_info': slave.info
                 }
                 result.append(_result)
             return {'data': result}

@@ -183,4 +183,6 @@ class Job(sqlobject.SQLObject):
             self.status = JobStatus.BUILDING
             self.build_start = sqlobject.DateTimeCol.now()
             self.build_host = slave.name
-            return slave.build(self.id, builder, self.package.pkgname, self.package.pkgver, self.arch)
+            kwargs = self.dict()
+            kwargs.update(self.package.dict())
+            return slave.build(self.id, builder, kwargs)

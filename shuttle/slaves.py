@@ -8,8 +8,10 @@ import xmlrpclib
 import socket
 from twisted.web import client
 import sys
+import os
 
 from models import Job, JobStatus, Package
+import sqlobject
 
 from urlparse import urljoin
 
@@ -37,8 +39,8 @@ class FileWritingQueue():
         self.drain = None
     
     def download(self, data):
-        url = data[0]
-        filename = data[1]
+        url = bytes(data[0])
+        filename = bytes(data[1])
         basepath = os.path.dirname(filename)
         if not os.path.exists(basepath):
             os.makedirs(basepath)
@@ -70,6 +72,7 @@ class BuilderSlave():
         self.url = url
         self.enabled = False
         self.status = {}
+        self.info = {}
         self.interval = interval
 
         self.uploading = False
@@ -77,8 +80,15 @@ class BuilderSlave():
         self._file_cache_url = urlappend(self.url, 'filecache')
         self.stop = None
     
-    def build(self, buildid, builder, *args):
-        return self.proxy.build(buildid, builder, *args)
+    def build(self, buildid, builder, kwargs):
+        files = [ '%s_%s.dsc' % (kwargs['pkgname'], kwargs['pkgver'])]
+        extra_args = {
+            "triggered": kwargs.get('triggerd', 1),
+            "build_args": kwargs.get('build_args', []),
+            "dist": kwargs.get('dist'),
+            "arch": kwargs.get('arch')
+        }
+        return self.proxy.build(buildid, builder, files, extra_args)
 
     def proxy_complete(self):
         if self.uploading:
@@ -86,12 +96,12 @@ class BuilderSlave():
 
         if self.status.get('builder_status', None) == "BuilderStatus.ABORTING":
             buildid = self.status.get('buildid', None)
-            job = Jobs.get_all_jobs(id=buildid)[0]
+            job = Job.selectBy(id=buildid)[0]
             self.complete(job, JobStatus.CANCELED)
         
         if self.status.get('builder_status', None) == 'BuilderStatus.WAITING':
             buildid = self.status.get('build_id', None)
-            job = Jobs.get_all_jobs(id=buildid)[0]
+            job = Job.selectBy(id=buildid)[0]
             if self.status.get('build_status') == "BuildStatus.OK":
                 status = JobStatus.BUILD_OK
             else:
@@ -100,11 +110,16 @@ class BuilderSlave():
             self.complete(job, status)
     
     def complete(self, job, status):
-        files = self.status.get("filemap", {})
-        files.add('buildlog')
+        files = []
+        for file in self.status.get("filemap", {}):
+            files.append(file)
+        files.append('buildlog')
         self.uploading = True
         queue = FileWritingQueue()
         queue.drain = functools.partial(self.upload_done, job, status)
+        basepath = os.path.join(config['cache']['tasks'], '%s-%s' % (job.dist, job.arch))
+        if os.path.exists(basepath):
+            os.system("mv %s %s.%s" % (basepath, basepath, job.package.triggered))
         for file in files:
             url = urlappend(self._file_cache_url, file)
             save = os.path.join(basepath, file)
@@ -114,6 +129,7 @@ class BuilderSlave():
         self.uploading = False
         self.proxy.clean()
         job.status = status
+        job.build_end = sqlobject.DateTimeCol.now()
 
     def _heartbeat(self):
         stopped = threading.Event()
@@ -121,8 +137,10 @@ class BuilderSlave():
             while not stopped.wait(self.interval):
                 try:
                     self.status = self.proxy.status()
+                    self.info   = self.proxy.info()
                 except:
-                    self.status = {'status': 'BuilderStatus.OFFLINE'}
+                    self.info   = {}
+                    self.status = {'builder_status': 'BuilderStatus.OFFLINE'}
                 self.proxy_complete()
                 
         threading.Thread(target=loop).start()    
@@ -168,22 +186,34 @@ class ShuttleBuilders(threading.Thread):
         except Exception as err:
             print("Error: unstable to open logfile: %s" % err)
     
-    def loop(self):
-        counter = 5
-        while not self.do_quit.isSet():
-            if counter == 5:
-                counter = 0
-            self.do_quit.wait(1)
-            counter += 1
+    def start_jobs(self):
+        for slave in self.slaves:
+            try:
+                if slave.enabled and slave.status.get('builder_status') == 'BuilderStatus.IDLE':
+                    if Job.selectBy(status=JobStatus.WAIT).count() > 0:
+                        job = Job.selectBy(status=JobStatus.WAIT)[0]
+                        package = Package.selectBy(id=job.package.id)[0]
+                        if job.dist in slave.info.get('dists') and job.arch in slave.info.get('arches'):
+                            with self.jobs_locker:
+                                print("send job %s to builder %s" % (job.id, slave.name))
+                                job.status = JobStatus.WAIT_LOCKED
+                                try:
+                                    job.start(slave, 'debian')
+                                except Exception as e:
+                                    print(e)
+                                    job.status = JobStatus.WAIT
+                                    slave.inactive()
+                                
+            except Exception as e:
+                print(e)
 
-    def daemon(self):
-        self.daemonize()
-        self.loop()
+    def loop(self):
+        if not self.do_quit.isSet():
+            self.start_jobs()
 
     def register_slave(self, slave):
         for _slave in self.slaves:
             if _slave.url == slave.url or _slave.name == slave.name:
-                print(slave.url, _slave.url)
                 return
         slave.active()
         self.slaves.append(slave)
