@@ -12,6 +12,8 @@ from models import Package, Job
 from models import JobStatus
 from config import config
 
+from slaves import ShuttleBuilders, BuilderSlave
+
 class JobResource(APIResource):
     isLeaf = False
 
@@ -35,7 +37,40 @@ class JobResource(APIResource):
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
-
+    
+    @GET('/(?P<id>[^/]+)/log')
+    def get_logtail(self, request, id):
+        def get_result():
+            job = Job.selectBy(id=id)[0]
+            log = "Loading buildlog ... "
+            if job.status == JobStatus.BUILDING:
+                autorefresh = True
+                for slave in ShuttleBuilders().slaves:
+                    if job.build_host == slave.name:
+                        status = slave.proxy.status()
+                        log = status.get('logtail', 'Waiting buildlog downloading...')
+                        break
+            else:
+                autorefresh = False
+                log_path = os.path.join(config['cache']['tasks'], str(job.package.id), 
+                    '%s-%s' % (job.dist, job.arch), 'buildlog')
+                if os.path.exists(log_path):
+                    with open(log_path, 'rb') as fp:
+                        fp.seek(0, os.SEEK_END)
+                        count = fp.tell()
+                        fp.seek(-count, os.SEEK_END)
+                        log = fp.read(count)
+            
+            result = {
+                "autorefresh": autorefresh,
+                "log": bytes(log)
+            }
+            return result
+        
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
 
     def callback(self, result, request):
         request.setResponseCode(200)

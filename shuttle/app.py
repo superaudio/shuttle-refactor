@@ -12,18 +12,34 @@ from views import ViewsResource
 from models import Job, JobStatus, Package
 from slaves import ShuttleBuilders
 
+class CacheResource(resource.Resource):
+    isLeaf = False
+    def __init__(self):
+        resource.Resource.__init__(self)
+        self.putChild("repos", File(config['cache']['repos']))
+        self.putChild("tasks", File(config['cache']['tasks']))
+
+    def getChild(self, name, request):
+        if name == '':
+            return self
+        return resource.Resource.getChild(self, name, request)
+
+    def render_GET(self, request):
+        return "<html>Hello, world!</html>"
+
 class RootResource(ViewsResource):
     def __init__(self):
         ViewsResource.__init__(self)
         self.putChild("api", ApiResource())
         self.putChild("static", File('static'))
+        self.putChild("cache", CacheResource())
 
 if __name__ == "__main__":
     import signal
     from twisted.python import log
     import sys
 
-    log.startLogging(sys.stdout)
+    #log.startLogging(sys.stdout)
 
     def handle_sigterm(signum, stack):
         print("Interrupted!. Exiting.")

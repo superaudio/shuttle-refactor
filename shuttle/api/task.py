@@ -202,6 +202,28 @@ class Task(APIResource):
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
     
+    @POST('/(?P<id>[^/]+)/rebuild')
+    def post_rebuild(self, request, id):
+        def get_result():
+            content = json.loads(request.content.read(), object_pairs_hook=deunicodify_hook)
+            id = content.get('taskid', 0)
+            if Package.selectBy(id=id).count() != 0:
+                package = Package.selectBy(id=id)[0]
+                package.triggered = package.triggered + 1
+                for job in Job.selectBy(packageID=package.id):
+                    if job.status >= JobStatus.BUILDING:
+                        job.status = JobStatus.WAIT
+                message = "package set rebuilded"
+            else:
+                message = "no package set rebuilded"
+
+            return {'message': message}
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+    
     @GET('/total')
     def get_total_jobs(self, request):
         def get_result():

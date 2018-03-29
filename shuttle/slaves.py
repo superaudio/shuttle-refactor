@@ -82,14 +82,12 @@ class BuilderSlave():
     
     def build(self, buildid, builder, kwargs):
         files = [ '%s_%s.dsc' % (kwargs['pkgname'], kwargs['pkgver'])]
-        extra_args = {
-            "triggered": kwargs.get('triggered', 1),
-            "build_args": kwargs.get('build_args', []),
-            "dist": kwargs.get('dist'),
-            "arch": kwargs.get('arch')
-        }
+        extra_args = {}
+        for key, value in kwargs.items():
+            if value is not None:
+                extra_args[key] = value 
         return self.proxy.build(buildid, builder, files, extra_args)
-
+    
     def proxy_complete(self):
         if self.uploading:
             return
@@ -119,7 +117,7 @@ class BuilderSlave():
         queue.drain = functools.partial(self.upload_done, job, status)
         basepath = os.path.join(config['cache']['tasks'],  str(job.package.id), '%s-%s' % (job.dist, job.arch))
         if os.path.exists(basepath):
-            os.system("mv %s %s.%s" % (basepath, basepath, job.package.triggered))
+            os.system("mv %s %s~%d" % (basepath, basepath, int(job.package.triggered)-1))
         for file in files:
             url = urlappend(self._file_cache_url, file)
             save = os.path.join(basepath, file)
