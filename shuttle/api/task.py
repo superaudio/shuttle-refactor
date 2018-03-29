@@ -153,6 +153,9 @@ class Task(APIResource):
             if Package.selectBy(**kwargs).count() != 0:
                 package = Package.selectBy(**kwargs).orderBy('-id')[0]
                 package.triggered = package.triggered + 1
+                for job in Job.selectBy(packageID=package.id):
+                    if job.status >= JobStatus.BUILDING:
+                        job.status = JobStatus.WAIT
             else:
                 package = Package(**kwargs)
                 for arch in added_arches:

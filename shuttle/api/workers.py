@@ -46,7 +46,7 @@ class Workers(APIResource):
         return server.NOT_DONE_YET
 
     @POST('/register')
-    def register_work(self, request):
+    def register_worker(self, request):
         content = json.loads(request.content.read())
         name = content.get('name')
         url = content.get('url')
@@ -66,8 +66,40 @@ class Workers(APIResource):
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
-
     
+    @POST('/active')
+    def active_worker(self, request):
+        content = json.loads(request.content.read())
+        name = content.get('name')
+        def get_result():
+            for slave in ShuttleBuilders().slaves:
+                if slave.name == name:
+                    slave.active()
+                    return {'message': 'slave %s actived' % name}
+            return {'message': 'something smell wrong.'}
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
+    @POST('/remove')
+    def remove_worker(self, request):
+        content = json.loads(request.content.read())
+        name = content.get('name')
+        def get_result():
+            for slave in ShuttleBuilders().slaves:
+                if slave.name == name:
+                    ShuttleBuilders().slaves.pop(slave)
+                    return {'message': 'slave %s removed' % name}
+            
+            return {'message': 'something smell wrong.'}
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
     def callback(self, result, request):
         request.setResponseCode(200)
         request.write(json.dumps(result))
@@ -75,8 +107,13 @@ class Workers(APIResource):
 
     def failure(self, result, request):
         request.setResponseCode(400)
+        try:
+            message = result.getErrorMessage()
+        except Exception as e:
+            message = str(e)
+            
         _result = {"state": "FAILED",
-            "message": result.getErrorMessage()
+            "message": message
         }
         request.write(json.dumps(_result))
         request.finish()

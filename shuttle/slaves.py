@@ -83,7 +83,7 @@ class BuilderSlave():
     def build(self, buildid, builder, kwargs):
         files = [ '%s_%s.dsc' % (kwargs['pkgname'], kwargs['pkgver'])]
         extra_args = {
-            "triggered": kwargs.get('triggerd', 1),
+            "triggered": kwargs.get('triggered', 1),
             "build_args": kwargs.get('build_args', []),
             "dist": kwargs.get('dist'),
             "arch": kwargs.get('arch')
@@ -117,7 +117,7 @@ class BuilderSlave():
         self.uploading = True
         queue = FileWritingQueue()
         queue.drain = functools.partial(self.upload_done, job, status)
-        basepath = os.path.join(config['cache']['tasks'], '%s-%s' % (job.dist, job.arch))
+        basepath = os.path.join(config['cache']['tasks'],  str(job.package.id), '%s-%s' % (job.dist, job.arch))
         if os.path.exists(basepath):
             os.system("mv %s %s.%s" % (basepath, basepath, job.package.triggered))
         for file in files:

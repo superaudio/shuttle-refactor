@@ -20,6 +20,11 @@ class RootResource(ViewsResource):
 
 if __name__ == "__main__":
     import signal
+    from twisted.python import log
+    import sys
+
+    log.startLogging(sys.stdout)
+
     def handle_sigterm(signum, stack):
         print("Interrupted!. Exiting.")
         builders.do_quit.set()

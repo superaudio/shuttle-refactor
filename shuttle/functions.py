@@ -7,6 +7,8 @@ import subprocess
 def list_repo():
     result = {}
     repo_base = config['cache']['repos']
+    if not os.path.exists(repo_base):
+        return {}
     for dir_name in os.listdir(repo_base):
         json_file = os.path.join(repo_base, dir_name, '%s.json' % dir_name )
         if os.path.exists(json_file):

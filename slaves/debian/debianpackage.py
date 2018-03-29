@@ -2,6 +2,7 @@ __metaclass__ = type
 
 import os
 import re
+import json
 import signal
 from functools import partial
 
@@ -61,80 +62,18 @@ class DebianBuildManager(BuildManager):
         self.arch = extra_args.get("arch")
         if self.dist not in self._slave.getDists() or self.arch not in self._slave.getArches():
             raise ValueError("%s-%s is not support by this slave" % (self.dist, self.arch))
-
-        self.sources_list = extra_args.get("archives")
-        self.dscfile = None
-
-        for f in files:
-            if f.endswith(".dsc"):
-                self.dscfile = f
-
-        self.overlay = extra_args.get("overlay", "tmpfs")
-        self.tarball = extra_args.get("basetgz")
-        self.librarian = extra_args.get("librarian")
-
-        source_id = extra_args.get("source_id")
-
-        if extra_args.get('binnmu', 'no') == 'yes':
-            self.binnmu = True
-            self.binnmu_version = int(extra_args.get("binnmu_version", 0))
-            self.binnmu_message = extra_args.get("binnmu-message", "Auto build with shuttle.")
-        else:
-            self.binnmu = False
-
-        self.add_suffix = extra_args.get('add_suffix', None)
-        self.builder_args = extra_args.get('builder_args', None)
-
-        if self.tarball is None or self.librarian is None or self.dscfile is None:
-            self.alreadyfailed = True
-            self._slave.buildFail("Arguments error ...")
-            self._slave.buildComplete()
-        else:
-            command = os.path.join(self._binpath, 'get-sources')
-            env = os.environ.copy()
-            dscfile = self.dscfile
-            if self.add_suffix is not None:
-                env['ADD_SUFFIX'] = self.dist
-                self.dscfile = dscfile.replace(".dsc", "~%s.dsc" % self.dist)
-
-            self.runSubProcess(command=command, args=['get-sources', self.buildid, self.librarian, self.tarball, source_id, dscfile], env=env) 
-
-    @staticmethod
-    def _parseChangesFile(linesIter):
-        seenfiles = False
-        for line in linesIter:
-            if line.endswith("\n"):
-                line = line[:-1]
-            if not seenfiles and line.startswith("Files:"):
-                seenfiles = True
-            elif seenfiles:
-                if not line.startswith(' '):
-                    break
-                filename = line.split(' ')[-1]
-                yield filename
-
-    def getChangesFilename(self):
-        if self.binnmu is False:
-            changes = self.dscfile[:-4] + "_" + self.arch + ".changes"
-        else:
-            changes = self.dscfile[:-4] + "+b%d" % self.binnmu_version + "_" + self.arch + ".changes"
-        return changes
+        with open(os.path.join(self._cachepath, 'extra_args.json'), 'w') as fp:
+            extra_args.update({'files': files})
+            fp.write(json.dumps(extra_args, indent=4))
+        
+        command = os.path.join(self._binpath, 'get-sources')
+        env = os.environ.copy()
+        self.runSubProcess(command=command, args=['get-sources', self.buildid], env=env)
 
     def gatherResult(self):
-        path = self.getChangesFilename()
-        if not os.path.exists(os.path.join(self._cachepath, path)):
-            extra_info="Gather result Failed: %s is not exists" % path
-            self.alreadyfailed = True
-            self._slave.buildFail(extra_info)
-            return
-        self._slave.addWaitingFile(path)
-        chfile = open(os.path.join(self._cachepath, path), "r")
-        try:
-            for fn in self._parseChangesFile(chfile):
-                if fn.endswith(".deb") or fn.endswith(".udeb"):
-                    self._slave.addWaitingFile(fn)
-        finally:
-            chfile.close()
+        for fn in os.listdir(self._cachepath):
+            if fn != 'buildlog' and os.path.isfile(os.path.join(self._cachepath, fn)):
+                self._slave.addWaitingFile(fn)
 
     def iterate(self, success):
         if self.alreadyfailed and success == 0:
@@ -148,32 +87,13 @@ class DebianBuildManager(BuildManager):
         
     def doPreBuild(self):
         command = os.path.join(self._binpath, 'prepare-chroot')
-        self.runSubProcess(command=command, args=['prepare-chroot', self.buildid, self.overlay])
-
-    def doUpdate(self):
-        command = os.path.join(self._binpath, 'override-sources-list')
-	args = ['override-sources-list', self.buildid]
-	args.extend(self.sources_list)
-        self.runSubProcess(command=command, args=args)
+        self.runSubProcess(command=command, args=['prepare-chroot', self.buildid])
 
     def doBuild(self):
-        args=['build-package', self.buildid, '--buildresult', self._cachepath]
-
-        if self.builder_args is not None:
-            if self.builder_args.get("use_network", "0") == "1":
-                args.append("--use-network")
-                args.append("yes")
-
-        if self.binnmu is True:
-            args.extend(['--debbuildopts', '-B', '--bin-nmu', self.binnmu_message, '--bin-nmu-version', str(self.binnmu_version)])
-
-        args.append(self.dscfile)
-
         os.environ["DIST"] = self.dist
         os.environ["ARCH"] = self.arch
-
         command = os.path.join(self._binpath, 'build-package')
-        self.runSubProcess(command=command, args=args, env=dict(os.environ))
+        self.runSubProcess(command=command, args=['build-package', self.buildid], env=dict(os.environ))
 
     def doPostBuild(self):
         command = os.path.join(self._binpath, 'scan-processes')
@@ -202,17 +122,6 @@ class DebianBuildManager(BuildManager):
             self.doPreBuild()
 
     def iterate_PREBUILD(self, success):
-        if success != 0:
-            if not self.alreadyfailed:
-                self.alreadyfailed = True
-                self._slave.buildFail()
-            self._state = DebianBuildState.CLEANUP
-            self.doCleanup()
-        else:
-            self._state = DebianBuildState.UPDATE
-            self.doUpdate()
-
-    def iterate_UPDATE(self, success):
         if success != 0:
             if not self.alreadyfailed:
                 self.alreadyfailed = True
