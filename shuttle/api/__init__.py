@@ -3,6 +3,7 @@ import workers
 import task
 import repo
 import job
+import log
 
 class ApiResource(resource.Resource):
     def __init__(self):
@@ -11,6 +12,7 @@ class ApiResource(resource.Resource):
         self.putChild("task", task.Task())
         self.putChild("repo", repo.Repo())
         self.putChild("job", job.JobResource())
+        self.putChild("log", log.LogResource())
     
     def getChild(self, name, request):
         return resource.Resource.getChild(self, name, request)

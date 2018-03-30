@@ -8,6 +8,8 @@ import fcntl
 import subprocess
 import argparse
 import json
+import datetime
+import glob
 
 distribution_snippet = """Origin: Deepin
 Label: %(uuid)s
@@ -105,15 +107,21 @@ class Repository():
         return self._reprepro(basepath=basepath, args=args)
 
     def include_packages(self, cache_dir, base, skip_source=False):
+        action = base.split('/')[0]
         if not os.path.exists(cache_dir):
-            raise RepositoryException("cache %s is not exists, Cannot include packages" % cache_dir)
+            raise RepositoryException("cache %s is not exists, failed to include packages" % cache_dir)
 
-        logfile = os.path.join(cache_dir, "log")
+        logfile = os.path.join(cache_dir, "uploadlog")
         if os.path.exists(logfile):
             os.remove(logfile)
         
-        with open(logfile, "a") as log:
-            log.write("Start at %s\n\n" % sqlobject.DateTimeCol.now())
+        config = self.config.get(action)
+        dist = self.config[action]['dist']
+        arches = self.config[action]['arches']
+
+        basepath = os.path.join(self.repo_path, self.name, base)
+        with open(logfile, "w") as log:
+            log.write("Start at %s\n" % datetime.datetime.now().strftime("%A %d. %B %Y"))
             arches = self.config[action].get('arches')
             if 'source' in arches and not skip_source:
                 source_dir = os.path.join(cache_dir, "source")
@@ -125,32 +133,32 @@ class Repository():
                         "dsc": os.path.join(source_dir, "*.dsc")
                     }
 
-                    _, stdout = self._reprepro(action=action, args=args)
-                    log.write(stdout)
-            
-            if os.path.exists(os.path.join(cache_dir, "%s-%s" % (self.dist, self.arch[0]))):
-                all_debs = os.path.join(cache_dir, "%s-%s" % (self.dist, arch), "*all.deb")
+                    _, stdout = self._reprepro(basepath=basepath, args=args)
+                    log.write(stdout.decode())
+
+            if os.path.exists(os.path.join(cache_dir, "%s-%s" % (dist, arches[0]))):
+                all_debs = os.path.join(cache_dir, "%s-%s" % (dist, arches[0]), "*all.deb")
                 if len(glob.glob(all_debs)) > 0:
                     args = "includedeb %(dist)s %(deb)s" % \
                         {
-                            "dist": self.dist,
+                            "dist": dist,
                             "deb": all_debs
                         }
                     _, stdout = self._reprepro(action=action, args=args)
-                    log.write(stdout)
+                    log.write(stdout.decode())
                 
-            for arch in self.arches:
-                arch_debs = os.path.join(cache_dir, "%s-%s" % (self.dist, arch), "*" + arch + ".deb")
+            for arch in arches:
+                arch_debs = os.path.join(cache_dir, "%s-%s" % (dist, arch), "*" + arch + ".deb")
                 if len(glob.glob(arch_debs)) > 0:
                     args = "includedeb %(dist)s %(deb)s" % \
                         {
-                            "dist": self.dist,
+                            "dist": dist,
                             "deb": arch_debs
                         }
                     _, stdout = self._reprepro(action=action, args=args)
-                    log.write(stdout)
+                    log.write(stdout.decode())
 
-            log.write("Finished at %s\n" % sqlobject.DateTimeCol.now())
+            log.write("Finished at %s\n" % datetime.datetime.now().strftime("%A %d. %B %Y"))
 
 
 class FakeRepository():
@@ -209,9 +217,10 @@ class FakeRepository():
             description='include packages to the repository'
             )
         parser.add_argument('--cache', required=True)
+        parser.add_argument('--base', required=True)
         parser.add_argument('--skip-source', action="store_true")
         args = parser.parse_args(sys.argv[2:])
-        self.include_packages(cache_dir=args.cache, skip_source=args.skip_source)
+        self.repo.include_packages(cache_dir=args.cache, base=args.base, skip_source=args.skip_source)
 
 
 if __name__ == "__main__":

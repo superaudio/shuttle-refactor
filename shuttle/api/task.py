@@ -9,7 +9,7 @@ from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
 
 from models import Package, Job
-from models import JobStatus
+from models import JobStatus, UploadStatus
 from config import config
 
 def parser_dscfile(dsc_file):
@@ -153,6 +153,7 @@ class Task(APIResource):
             if Package.selectBy(**kwargs).count() != 0:
                 package = Package.selectBy(**kwargs).orderBy('-id')[0]
                 package.triggered = package.triggered + 1
+                package.upload_status = UploadStatus.UNKNOWN
                 for job in Job.selectBy(packageID=package.id):
                     if job.status >= JobStatus.BUILDING:
                         job.status = JobStatus.WAIT

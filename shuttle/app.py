@@ -1,7 +1,6 @@
 from twisted.web import resource, server
 from twisted.internet import defer, reactor
 from twisted.web.static import File
-from twisted.internet.task import LoopingCall
 
 import sqlobject
 from config import config
@@ -57,8 +56,7 @@ if __name__ == "__main__":
     
     signal.signal(signal.SIGTERM, handle_sigterm)
     signal.signal(signal.SIGINT, handle_sigterm)
-    loop_builders = LoopingCall(builders.loop)
-    loop_builders.start(10)
+    builders.loop()
     
     reactor.listenTCP(config['runtime']['port'], site)
     reactor.run()

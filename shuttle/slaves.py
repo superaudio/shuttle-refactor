@@ -7,15 +7,18 @@ import time
 import xmlrpclib
 import socket
 from twisted.web import client
+from twisted.internet.task import LoopingCall
 import sys
 import os
 
-from models import Job, JobStatus, Package
+from models import Job, Package
+from models import JobStatus, UploadStatus
 import sqlobject
 
 from urlparse import urljoin
 
 from config import config
+import functions
 
 def urlappend(baseurl, path):
     assert not path.startswith('/')
@@ -157,7 +160,6 @@ class BuilderSlave():
 
             self.status = {}
 
-
 class ShuttleBuilders(threading.Thread):
 
     slaves = []
@@ -204,10 +206,40 @@ class ShuttleBuilders(threading.Thread):
                                 
             except Exception as e:
                 print(e)
+    
+    def finish_jobs(self):
+        for package in Package.selectBy(upload_status=UploadStatus.UNKNOWN):
+            jobs = Job.selectBy(packageID=package.id)
+            all_ok = True
+            for job in jobs:
+                if job.status != JobStatus.BUILD_OK:
+                    all_ok = False
+                    break
+            if all_ok:
+                package.upload_status = UploadStatus.WAIT
+    
+    def upload_tasks(self):
+        for package in Package.selectBy(upload_status=UploadStatus.WAIT)[:5]:
+            package.upload_status = UploadStatus.UPLOADING
+            repo_base = config['cache']['repos']
+            env = os.environ.copy()
+            env['REPOPATH'] = repo_base
+            env['NAME'] = package.reponame
+            task_cache = os.path.join(config['cache']['tasks'], str(package.id))
+            command = "../tools/repo.py include --cache %(cache)s --base %(base)s" % {
+                "cache": task_cache, "base": package.action
+                }
+            status, _ = functions.getstatusoutput(command, env=env)
+            if status != 0:
+                package.upload_status = UploadStatus.UPLOAD_FAILED
+            else:
+                package.upload_status = UploadStatus.UPLOAD_OK
 
     def loop(self):
-        if not self.do_quit.isSet():
-            self.start_jobs()
+        print("start builder loop.")
+        LoopingCall(self.start_jobs).start(10)
+        LoopingCall(self.finish_jobs).start(15)
+        LoopingCall(self.upload_tasks).start(20)
 
     def register_slave(self, slave):
         for _slave in self.slaves:
