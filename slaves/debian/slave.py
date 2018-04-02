@@ -240,7 +240,7 @@ class BuildManager:
         if path is None:
             path = self.home
         self._subprocess = RunCapture(self._slave, iterate)
-        self._slave.log("Run: %s %s\n" % (command, " ".join(args))
+        self._slave.log("Run: %s %s\n" % (command, " ".join(args[1:])))
         childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
         self._reactor.spawnProcess(
             self._subprocess, command, args, env=env,

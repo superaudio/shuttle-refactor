@@ -144,7 +144,7 @@ class Repository():
                             "dist": dist,
                             "deb": all_debs
                         }
-                    _, stdout = self._reprepro(action=action, args=args)
+                    _, stdout = self._reprepro(basepath=basepath, args=args)
                     log.write(stdout.decode())
                 
             for arch in arches:
@@ -155,7 +155,7 @@ class Repository():
                             "dist": dist,
                             "deb": arch_debs
                         }
-                    _, stdout = self._reprepro(action=action, args=args)
+                    _, stdout = self._reprepro(basepath=basepath, args=args)
                     log.write(stdout.decode())
 
             log.write("Finished at %s\n" % datetime.datetime.now().strftime("%A %d. %B %Y"))

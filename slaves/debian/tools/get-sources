@@ -45,7 +45,7 @@ def prepare_source():
             version = version.split('-')[0]
             destver = "%s-%d" % (version, triggered)
         else:
-            destver = "%s+b%d" % (version, triggered)
+            destver = "%s+pkg%d" % (version, triggered)
 
         changelog = '%(origname)s-%(version)s/debian/changelog' % \
             {"origname": origname, "version": version}

@@ -11,13 +11,16 @@ kBuildDir = os.path.join(os.path.expanduser('~'),
                         "build-%s" % str(kBuildId))
  
 def parser_pbuilder():
-    build_args = []
+    build_args = ["--no-targz", "--allow-untrusted", "--autocleanaptcache"]
+
     if not os.path.exists(os.path.join(kCache, 'extra_args.json')):
         print("extra_args.json is missing")
         return build_args
     
     with open(os.path.join(kCache, 'extra_args.json')) as fp:
         content = json.loads(fp.read())
+
+    build_args.extend(["--architecture", content.get('arch'), "--distribution", content.get('dist')])
     
     if 'use-network' in content['build_args']:
         print("add network connection")
@@ -30,6 +33,7 @@ def parser_pbuilder():
 def build_package():
     build_args = parser_pbuilder()
     env = os.environ.copy()
+    env['USECOLORS'] = 'no'
     build_args.append('--buildplace')
     if os.path.exists(os.path.join(kBuildDir, 'chroot-autobuild-tmpfs')):
         env['APTCACHEHARDLINK'] = 'no'
@@ -38,12 +42,15 @@ def build_package():
         buildplace = os.path.join(kBuildDir, 'chroot-autobuild')
     
     build_args.append(buildplace)
+    build_args.append('--buildresult')
+    build_args.append(kCache)
+
     dscfile = glob.glob(os.path.join(kBuildDir, "*.dsc"))[0]
 
     command = "sudo -E pbuilder --update  %s" % " ".join(build_args)
-    subprocess.check_call(command, shell=True, cwd=kBuildDir, env=env)
+    subprocess.check_call(command, shell=True, cwd=kBuildDir, env=env, executable='/bin/bash')
     command = "sudo -E pbuilder --build %s %s" % (" ".join(build_args), dscfile)
-    subprocess.check_call(command, shell=True, cwd=kBuildDir, env=env)
+    subprocess.check_call(command, shell=True, cwd=kBuildDir, env=env, executable='/bin/bash')
 
 if __name__ == "__main__":
     build_package()

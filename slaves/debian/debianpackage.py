@@ -67,8 +67,7 @@ class DebianBuildManager(BuildManager):
             fp.write(json.dumps(extra_args, indent=4))
         
         command = os.path.join(self._binpath, 'get-sources')
-        env = os.environ.copy()
-        self.runSubProcess(command=command, args=['get-sources', self.buildid], env=env)
+        self.runSubProcess(command=command, args=['get-sources', self.buildid, self._cachepath])
 
     def gatherResult(self):
         for fn in os.listdir(self._cachepath):
@@ -87,13 +86,11 @@ class DebianBuildManager(BuildManager):
         
     def doPreBuild(self):
         command = os.path.join(self._binpath, 'prepare-chroot')
-        self.runSubProcess(command=command, args=['prepare-chroot', self.buildid])
+        self.runSubProcess(command=command, args=['prepare-chroot', self.buildid, self._cachepath])
 
     def doBuild(self):
-        os.environ["DIST"] = self.dist
-        os.environ["ARCH"] = self.arch
         command = os.path.join(self._binpath, 'build-package')
-        self.runSubProcess(command=command, args=['build-package', self.buildid], env=dict(os.environ))
+        self.runSubProcess(command=command, args=['build-package', self.buildid, self._cachepath])
 
     def doPostBuild(self):
         command = os.path.join(self._binpath, 'scan-processes')

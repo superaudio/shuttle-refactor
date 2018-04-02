@@ -51,8 +51,9 @@ class FileWritingQueue():
         d = client.downloadPage(url, filename, timeout=300)
         return d
     
-    def push(self, data):
-        self.tasks.append(data)
+    def push(self, datas):
+        for data in datas:
+            self.tasks.append(data)
         self.process()
 
     def task_finished(self, *args):
@@ -127,7 +128,7 @@ class BuilderSlave():
         return self.proxy.build(buildid, builder, files, extra_args)
     
     def proxy_complete(self):
-        if self.uploading:
+        if self.uploading is True:
             return
 
         if self.status.get('builder_status', None) == "BuilderStatus.ABORTING":
@@ -156,10 +157,13 @@ class BuilderSlave():
         basepath = os.path.join(config['cache']['tasks'],  str(job.package.id), '%s-%s' % (job.dist, job.arch))
         if os.path.exists(basepath):
             os.system("mv %s %s~%d" % (basepath, basepath, int(job.package.triggered)-1))
+        
+        datas = []
         for file in files:
             url = urlappend(self._file_cache_url, file)
             save = os.path.join(basepath, file)
-            queue.push([url, save])
+            datas.append([url, save])
+        queue.push(datas)
     
     def upload_done(self, job, status):
         self.uploading = False

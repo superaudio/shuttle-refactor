@@ -22,8 +22,11 @@ def prepare_chroot():
         shell=True, cwd=kBuildDir)
     
     print("Overriding sources.list.")
-    with open(os.path.join(kBuildDir, 'sources.list')) as fp:
+    print('\n'.join(content['archives']))
+
+    with open(os.path.join(kBuildDir, 'sources.list'),'w') as fp:
         fp.write('\n'.join(content['archives']))
+
     subprocess.check_call("sudo mv %(source)s %(dest)s" % {
         "source": os.path.join(kBuildDir, 'sources.list'),
         "dest": os.path.join(kBuildDir, 'chroot-autobuild/etc/apt/sources.list')

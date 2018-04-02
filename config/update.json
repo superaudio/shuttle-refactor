@@ -1,0 +1,7 @@
+{
+	"timestamp": "xxx",
+	"basetgz":{ 
+		"i386": "md5sum",
+		"amd64": "md5sum"
+	}
+}
