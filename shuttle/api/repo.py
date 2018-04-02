@@ -41,7 +41,13 @@ class Repo(APIResource):
             env['REPOPATH'] = repo_base
             env['NAME'] = repo_uri
             command = "../tools/repo.py create"
-            return dict(zip(['status', 'message'], functions.getstatusoutput(command, env=env)))
+            status, _message = functions.getstatusoutput(command, env=env)
+            if status == 0:
+                message = "repo create succeed."
+            else:
+                message = "repo create failed. %s " % _message
+            
+            return {'status': status, 'message': message}
 
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)

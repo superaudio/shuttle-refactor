@@ -80,7 +80,7 @@ class Task(APIResource):
             content = json.loads(request.content.read(), object_pairs_hook=deunicodify_hook)
             # first will checkif the repo exists
             reponame = content['reponame'].split('/')[0]
-            repopath =  os.path.join(config['cache'].get('repos'), reponame)
+            repopath = os.path.join(config['cache'].get('repos'), reponame)
             repo_config = os.path.join(repopath, '%s.json' % reponame)
             if not os.path.exists(repo_config):
                 raise OSError("Repository has not exists, Please create it first!")
@@ -102,12 +102,16 @@ class Task(APIResource):
             # filter the source from arches
             arches = filter(lambda arch: arch != 'source', repo_config.get(content['action'])['arches'])
 
-            command = "../tools/git.py --config ../config/default.packages.json"
-            command += " --pkgname %(pkgname)s --action %(action)s --cachedir %(cache)s" % {
+            command = "../tools/git.py --pkgname %(pkgname)s --action %(action)s --cachedir %(cache)s \
+                --source %(source)s" % {
                 "pkgname": content['pkgname'],
                 "action": content['action'],
+                "source": content['source'],
                 "cache": config['cache'].get('sources')
             }
+
+            if content.get('debian'):
+                command += " --debian %(debian)s" % {"debian": content['debian']}
 
             try:
                 """result will like blow
@@ -153,12 +157,16 @@ class Task(APIResource):
             if Package.selectBy(**kwargs).count() != 0:
                 package = Package.selectBy(**kwargs).orderBy('-id')[0]
                 package.triggered = package.triggered + 1
+                #update build_args
+                if content.get('build_args'):
+                    package.build_args = content['build_args']
                 package.upload_status = UploadStatus.UNKNOWN
                 for job in Job.selectBy(packageID=package.id):
                     if job.status >= JobStatus.BUILDING:
                         job.status = JobStatus.WAIT
             else:
                 package = Package(**kwargs)
+                package.build_args = content.get('build_args')
                 for arch in added_arches:
                     Job(package=package, arch=arch, dist=dist, status=JobStatus.WAIT)
 

@@ -319,20 +319,19 @@ class GitBuilder():
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True)
     parser.add_argument("--pkgname", required=True)
+    parser.add_argument("--source", required=True, help="Set the source reference.")
+    parser.add_argument("--debian", help="Set the debian reference.")
     parser.add_argument("--cachedir", default="/tmp/cache")
     parser.add_argument("--action", required=True, help="[release, commit, release-candidate] is support")
-    parser.add_argument("--version")
+    parser.add_argument("--version", help="set the fake version.")
 
     args = parser.parse_args()
-    if not os.path.exists(args.config):
-        print("%s is not exists." % args.config)
-        sys.exit(1)
+    config = {
+        "source": args.source,
+        "debian": args.debian
+    }
 
-    json_config = json.load(open(args.config, 'r'))
-
-    config = json_config.get(args.pkgname)
     g = GitBuilder(pkgname=args.pkgname, config=config, cache_dir=args.cachedir)
     result = g.archive(action=args.action, version=args.version)
     print(result)
