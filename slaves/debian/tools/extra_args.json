@@ -1,0 +1,29 @@
+{
+    "status": "BUILDING", 
+    "files": [
+        "dde-session-ui_4.3.7+0+g812a646.dsc"
+    ], 
+    "dist": "experimental", 
+    "triggered": 6, 
+    "build_host": "debian-builder-01", 
+    "build_end": "2018-04-02 12:38:28.921659", 
+    "reponame": "dde", 
+    "build_args": [
+        "use_network=1"
+    ], 
+    "status_changed": "2018-04-02 12:51:40.585671", 
+    "creation_date": "2018-04-02 09:50:08.547532", 
+    "arch": "amd64", 
+    "id": 2, 
+    "pkgver": "4.3.7+0+g812a646", 
+    "task": "experimental/amd64", 
+    "pkgname": "dde-session-ui", 
+    "build_start": "2018-04-02 12:57:50.545226", 
+    "base_url": "http://10.0.13.190:5000/cache/tasks/2/source", 
+    "hashsum": "812a646b9b59301ec20584fd1ded8d4360b1703c", 
+    "upload_status": "UNKNOWN", 
+    "archives": [
+        "deb [trusted=yes] http://127.0.0.1/repos/dde/commit experimental main"
+    ], 
+    "action": "commit"
+}

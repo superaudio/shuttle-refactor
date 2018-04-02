@@ -1,8 +1,51 @@
-#!/bin/sh
+#!/usr/bin/env python
+import os
+import json
+import sys
+import subprocess
 
-BUILDID="$1"
+kBuildId = sys.argv[1]
+kCache   = sys.argv[2]
+kBuildDir = os.path.join(os.path.expanduser('~'), 
+                        "build-%s" % str(kBuildId))
 
-set -e
+def prepare_chroot():
+    if not os.path.exists(os.path.join(kCache, 'extra_args.json')):
+        print("extra_args.json is missing")
+        sys.exit(1)
 
-cd $HOME
-echo "Unpacking chroot for build ${BUILDID}"
+    with open(os.path.join(kCache, 'extra_args.json')) as fp:
+        content = json.loads(fp.read())
+
+    subprocess.check_call("mkdir -p %s/chroot-autobuild" % kBuildDir, shell=True)
+    subprocess.check_call("sudo tar -xf base.tgz -C  chroot-autobuild", 
+        shell=True, cwd=kBuildDir)
+    
+    print("Overriding sources.list.")
+    with open(os.path.join(kBuildDir, 'sources.list')) as fp:
+        fp.write('\n'.join(content['archives']))
+    subprocess.check_call("sudo mv %(source)s %(dest)s" % {
+        "source": os.path.join(kBuildDir, 'sources.list'),
+        "dest": os.path.join(kBuildDir, 'chroot-autobuild/etc/apt/sources.list')
+        }, shell=True, cwd=kBuildDir)
+    
+    if 'use_tmpfs' in content.get('build_args'):
+        print("preparing overlay to speed building up.")
+        subprocess.check_call("sudo modprobe overlay -q || true", shell=True)
+        subprocess.check_call("sudo mkdir -p /dev/shm/build-${BUILDID}-shm" % str(kBuildId), shell=True)
+        subprocess.check_call("sudo mkdir -p /dev/shm/build-%s-work" % str(kBuildId), shell=True)
+        subprocess.check_call("mkdir -p chroot-autobuild-tmpfs", cwd=kBuildDir, shell=True)
+        
+        lowerdir = os.path.join(kBuildDir, 'chroot-autobuild')
+        upperdir = "/dev/shm/build-%s-shm" % str(kBuildId)
+        workdir  = "/dev/shm/build-%s-work" % str(kBuildId)
+        overlay_cmd = "sudo mount -t overlay overlay -o \
+            lowerdir=%(lowerdir)s,upperdir=%(upperdir)s,workdir=%(workdir)s \
+            %(builddir)/chroot-autobuild-tmpfs" % {
+                "lowerdir": lowerdir, "upperdir": upperdir,
+                "workdir": workdir, "builddir": kBuildDir
+            }
+        subprocess.check_call(overlay_cmd, shell=True)
+
+if __name__ == "__main__":
+    prepare_chroot()

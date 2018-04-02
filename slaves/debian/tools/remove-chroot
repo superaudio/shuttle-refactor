@@ -10,5 +10,16 @@ echo "Removing build ${BUILDID}"
 
 cd ${HOME}
 
+count=0
+while [ $count -lt 10 ] && grep -q "${HOME}/build-${BUILDID}/chroot-autobuild-tmpfs" /proc/mounts;do
+    sudo umount -l "${HOME}/build-${BUILDID}/chroot-autobuild-tmpfs" || true
+    count=$((count + 1))
+    sleep 1
+done
+
+if [ -d "build-${BUILDID}/chroot-autobuild-tmpfs" ];then
+    sudo rm -rf /dev/shm/build-${BUILDID}-shm
+    sudo rm -rf /dev/shm/build-${BUILDID}-work
+fi
 
 sudo rm -rf "build-${BUILDID}"

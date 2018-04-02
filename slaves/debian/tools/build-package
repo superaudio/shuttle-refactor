@@ -1,48 +1,49 @@
-#!/bin/bash
+#!/usr/bin/env python
+import os
+import json
+import sys
+import subprocess
+import glob
 
-BUILDID=$1; shift
-declare -a PBCMDLINE
+kBuildId = sys.argv[1]
+kCache   = sys.argv[2]
+kBuildDir = os.path.join(os.path.expanduser('~'), 
+                        "build-%s" % str(kBuildId))
+ 
+def parser_pbuilder():
+    build_args = []
+    if not os.path.exists(os.path.join(kCache, 'extra_args.json')):
+        print("extra_args.json is missing")
+        return build_args
+    
+    with open(os.path.join(kCache, 'extra_args.json')) as fp:
+        content = json.loads(fp.read())
+    
+    if 'use-network' in content['build_args']:
+        print("add network connection")
+        build_args.append('--use-network')
+        build_args.append('yes')
 
-PBCMDLINE+=("--architecture" ${ARCH})
-PBCMDLINE+=("--distribution" ${DIST})
-PBCMDLINE+=("--no-targz")
-PBCMDLINE+=("--allow-untrusted")
-PBCMDLINE+=("--autocleanaptcache")
+    return build_args
 
-while [ -n "$1" ];do
-    case "$1" in
-        --debug)
-            PBCMDLINE+=("--debug")
-            set -x
-            shift
-            ;;
-        --configfile)
-            if [ ! -f "$2" ];then
-                echo "E: Config file $2 does not exists."
-                exit 1
-            fi
-            . "$2"
-            shift 2
-            ;;
-        --save-after-login|--save)
-            SAVE_AFTER_EXIT="yes"
-            shift
-            ;;
-        *.dsc)
-            DSCFILE=$1
-            shift
-            ;;
-        --)
-            break
-            ;;
-        *)
-            PBCMDLINE+=("$1")
-            shift
-            ;;
-    esac
-done
 
-ACTUAL_NR_PROCESSORS=$(grep -c ^processor /proc/cpuinfo | sed 's/^0$/1/')
-NR_PROCESSORS=${ACTUAL_NR_PROCESSORS}
-echo "Initiating build $BUILDID with $NR_PROCESSORS jobs across $ACTUAL_NR_PROCESSORS processor cores."
-echo ${PBCMDLINE[@]}
+def build_package():
+    build_args = parser_pbuilder()
+    env = os.environ.copy()
+    build_args.append('--buildplace')
+    if os.path.exists(os.path.join(kBuildDir, 'chroot-autobuild-tmpfs')):
+        env['APTCACHEHARDLINK'] = 'no'
+        buildplace = os.path.join(kBuildDir, 'chroot-autobuild-tmpfs')
+    else:
+        buildplace = os.path.join(kBuildDir, 'chroot-autobuild')
+    
+    build_args.append(buildplace)
+    dscfile = glob.glob(os.path.join(kBuildDir, "*.dsc"))[0]
+
+    command = "sudo -E pbuilder --update  %s" % " ".join(build_args)
+    subprocess.check_call(command, shell=True, cwd=kBuildDir, env=env)
+    command = "sudo -E pbuilder --build %s %s" % (" ".join(build_args), dscfile)
+    subprocess.check_call(command, shell=True, cwd=kBuildDir, env=env)
+
+if __name__ == "__main__":
+    build_package()

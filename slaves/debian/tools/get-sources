@@ -1,10 +1,65 @@
-#!/bin/bash
-echo "Start build at $(date '+%x %X')"
-lsb_release -a
+#!/usr/bin/env python
+import os
+import json
+import sys
+import subprocess
 
-set -e
-pkgname=$(echo ${DSCFILE} | awk -F'_' '{print $1}')
+kBuildId = sys.argv[1]
+kCache   = sys.argv[2]
+kBuildDir = os.path.join(os.path.expanduser('~'), 
+                        "build-%s" % str(kBuildId))
 
-exec 2>&1
-cd ${HOME}
-mkdir -p build-${BUILDID}
+def print_motd():
+    subprocess.check_call("echo Start build at $(date '+%x %X')", shell=True)
+    subprocess.check_call("lsb_release -a || true", shell=True)
+
+def prepare_source():
+    if not os.path.exists(os.path.join(kCache, 'extra_args.json')):
+        print("extra_args.json is missing")
+        sys.exit(1)
+    
+    with open(os.path.join(kCache, 'extra_args.json')) as fp:
+        content = json.loads(fp.read())
+
+    if not os.path.exists(kBuildDir):
+        os.makedirs(kBuildDir)
+
+    if content.get('basetgz'):
+        print("Fetching builder runtime: %s" % content['basetgz'])
+        subprocess.check_call("wget -q -t 3 -O base.tgz %s" % content['basetgz'], cwd=kBuildDir, shell=True)
+    
+    print("Fetching builder source: ")
+    dscfile = content['files'][0]
+    subprocess.check_call("dget -q -ud %s/%s" % (content['base_url'], dscfile) , cwd=kBuildDir, shell=True)
+    
+    if content.get('triggered', 1) != 1:
+        triggered = content['triggered']
+        print("Inherit triggered %d times to sources" % triggered)
+        subprocess.check_call("dpkg-source -x %s" % dscfile , cwd=kBuildDir, shell=True)
+        
+        version = dscfile.split('_')[1][:-4]
+        origname = dscfile.split('_')[0]
+        subprocess.check_call("rm -f %s" % dscfile, shell=True, cwd=kBuildDir)
+
+        if '-' in version:
+            version = version.split('-')[0]
+            destver = "%s-%d" % (version, triggered)
+        else:
+            destver = "%s+b%d" % (version, triggered)
+
+        changelog = '%(origname)s-%(version)s/debian/changelog' % \
+            {"origname": origname, "version": version}
+        
+        subprocess.check_call("sed -i s/\(%(origver)s\)/\(%(destver)s\)/ %(changelog)s" % 
+            {"origver": version, "destver": destver, "changelog": changelog}, 
+            cwd=kBuildDir, shell=True)
+        subprocess.check_call("dpkg-source -b %(origname)s-%(version)s" % 
+            {"origname": origname, "version": version}, 
+            cwd=kBuildDir, shell=True)
+
+def main():
+    print_motd()
+    prepare_source()
+
+if __name__ == '__main__':
+    main()

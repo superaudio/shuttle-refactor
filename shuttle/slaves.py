@@ -18,6 +18,7 @@ import sqlobject
 from urlparse import urljoin
 
 from config import config
+import json
 import functions
 
 def urlappend(baseurl, path):
@@ -86,9 +87,43 @@ class BuilderSlave():
     def build(self, buildid, builder, kwargs):
         files = [ '%s_%s.dsc' % (kwargs['pkgname'], kwargs['pkgver'])]
         extra_args = {}
+
         for key, value in kwargs.items():
             if value is not None:
-                extra_args[key] = value 
+                extra_args[key] = value
+        
+        # set the baseurl and basetgz http://<url>/cache/tasks/<id>/source/
+        baseurl = "%(url)s/cache/tasks/%(buildid)s/source" % {
+            "url": config['runtime']['url'],
+            "buildid": str(buildid)
+        }
+        extra_args['base_url'] = baseurl
+        repo_base = config['cache']['repos']
+        archives = []
+        repo_json = os.path.join(repo_base, kwargs['reponame'], "%s.json" % kwargs['reponame'])
+        if os.path.exists(repo_json):
+            content = json.loads(file(repo_json).read())
+            action = kwargs['action'].split('/')[0]
+            dist = kwargs['dist']
+            archive = 'deb [trusted=yes] %(repo_url)s/%(repo_name)s/%(action)s %(dist)s main' % {
+                'repo_url': config['runtime']['repo_url'],
+                'repo_name': kwargs['reponame'],
+                'action': kwargs['action'],
+                'dist': dist
+                }
+            archives.append(archive)
+
+        update_json = os.path.join(repo_base, kwargs['reponame'], "update.json")
+        if os.path.exists(update_json):
+            content = json.loads(file(update_json).read())
+            if content.get('basetgz'):
+                for arch, basetgz in content['basetgz'].items():
+                    if arch == kwargs['arch']:
+                        extra_args['basetgz'] = basetgz
+                        break
+            if content.get('archives'):
+                archives.extend(content.get('archives'))
+        extra_args['archives'] = archives
         return self.proxy.build(buildid, builder, files, extra_args)
     
     def proxy_complete(self):
