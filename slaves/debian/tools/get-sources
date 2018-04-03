@@ -9,6 +9,8 @@ kCache   = sys.argv[2]
 kBuildDir = os.path.join(os.path.expanduser('~'), 
                         "build-%s" % str(kBuildId))
 
+kBasetgzCache = os.path.join(os.path.expanduser('~'), "base-cache")
+
 def print_motd():
     subprocess.check_call("echo Start build at $(date '+%x %X')", shell=True)
     subprocess.check_call("lsb_release -a || true", shell=True)
@@ -24,9 +26,23 @@ def prepare_source():
     if not os.path.exists(kBuildDir):
         os.makedirs(kBuildDir)
 
+    if not os.path.exists(kBasetgzCache):
+        os.makedirs(kBasetgzCache)
+
     if content.get('basetgz'):
-        print("Fetching builder runtime: %s" % content['basetgz'])
-        subprocess.check_call("wget -q -t 3 -O base.tgz %s" % content['basetgz'], cwd=kBuildDir, shell=True)
+        reponame = content['reponame'].split('/')[0]
+        basetgz = '%(reponame)s-%(md5sum)s' % {'reponame': reponame, 'md5sum': content['basetgz']['md5sum']}
+        cachedtgz = os.path.join(kBasetgzCache, basetgz)
+
+        if os.path.exists(cachedtgz):
+            print("Use cached builder runtime: %s" % basetgz)
+            subprocess.check_call("ln -sf %s base.tgz" % cachedtgz, cwd=kBuildDir, shell=True)
+        else:
+            print("Clean unused buildtgz")
+            subprocess.check_call("rm -f %s-*" % reponame, cwd=kBasetgzCache, shell=True)
+            print("Fetching builder runtime: %s" % content['basetgz']['url'])
+            subprocess.check_call("wget -q -t 3 -O %s %s" % (basetgz, content['basetgz']['url']), cwd=kBasetgzCache, shell=True)
+            subprocess.check_call("ln -sf %s base.tgz" % cachedtgz, cwd=kBuildDir, shell=True)
     
     print("Fetching builder source: ")
     dscfile = content['files'][0]

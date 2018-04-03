@@ -154,19 +154,28 @@ class Task(APIResource):
                 'reponame': content['reponame'], 'action': content['action'],
                 'hashsum': result['hashsum']
                 }
+            
+            build_args = None
+            if content.get('build_args'):
+                build_args = content['build_args']
+                if isinstance(build_args, list):
+                    build_args = '|'.join(build_args)
+            
             if Package.selectBy(**kwargs).count() != 0:
                 package = Package.selectBy(**kwargs).orderBy('-id')[0]
                 package.triggered = package.triggered + 1
                 #update build_args
-                if content.get('build_args'):
-                    package.build_args = content['build_args']
+                if build_args:
+                    package.build_args = build_args
+
                 package.upload_status = UploadStatus.UNKNOWN
                 for job in Job.selectBy(packageID=package.id):
                     if job.status >= JobStatus.BUILDING:
                         job.status = JobStatus.WAIT
             else:
                 package = Package(**kwargs)
-                package.build_args = content.get('build_args')
+                if build_args:
+                    package.build_args = build_args
                 for arch in added_arches:
                     Job(package=package, arch=arch, dist=dist, status=JobStatus.WAIT)
 
@@ -211,8 +220,8 @@ class Task(APIResource):
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
     
-    @POST('/(?P<id>[^/]+)/rebuild')
-    def post_rebuild(self, request, id):
+    @POST('/rebuild')
+    def post_rebuild(self, request):
         def get_result():
             content = json.loads(request.content.read(), object_pairs_hook=deunicodify_hook)
             id = content.get('taskid', 0)

@@ -3,6 +3,7 @@ import functions
 
 import os
 import json
+import datetime
 
 from twisted.internet import defer, threads
 from twisted.web import resource, server
@@ -48,6 +49,55 @@ class Repo(APIResource):
                 message = "repo create failed. %s " % _message
             
             return {'status': status, 'message': message}
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+    
+    @GET('/(?P<reponame>[^/]+)/update')
+    def get_update(self, request, reponame):
+        def get_result():
+            repo_base = config['cache']['repos']
+            repo_json = os.path.join(repo_base, reponame, 'update.json')
+            if os.path.exists(repo_json):
+                result = json.loads(open(repo_json, 'r').read())
+            else:              
+                result = {
+                    "basetgz": [{"i386": {"url": "url", "md5sum": "md5sum"}},
+                                {"amd64": {"url": "url", "md5sum": "md5sum"}}],
+                    "archives": ["deb http://pools.corp.deepin.com/deepin unstable main contrib"]
+                    }
+                result['timestamp'] = datetime.datetime.now().strftime('%s')
+            return {'status': 0, 'config': result}
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
+    @POST('/update')
+    def post_update(self, request):
+        def get_result():
+            headers = request.getAllHeaders()
+            content = cgi.FieldStorage(
+                fp = request.content,
+                headers = headers,
+                environ = {'REQUEST_METHOD':'POST',
+                        'CONTENT_TYPE': headers['content-type'],}
+                )
+            repo_base = config['cache']['repos']
+            reponame = content['reponame'].value
+
+            repo_json = os.path.join(repo_base, reponame, 'update.json')
+            try:
+                update_config = json.loads(eval(content['config'].value))
+                with open(repo_json, 'w') as fp:
+                    fp.write(json.dumps(update_config, indent=4))
+                return {'status': 0, 'message': 'update done'}
+
+            except:
+                return {'status': 1, 'message': 'update failed'}
 
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)

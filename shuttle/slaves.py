@@ -66,13 +66,15 @@ class FileWritingQueue():
         self.process()
 
     def process(self):
+        if len(self.tasks) == 0:
+            return
+
         if len(self.tasks) != 0 and self.working:
             return
         task = self.tasks.pop(0)
         self.working = True
         d = self.download(task)
         d.addBoth(self.task_finished)
-
 
 class BuilderSlave():
     def __init__(self, name, url, interval=5):
@@ -97,37 +99,56 @@ class BuilderSlave():
                 extra_args[key] = value
         
         # set the baseurl and basetgz http://<url>/cache/tasks/<id>/source/
-        baseurl = "%(url)s/cache/tasks/%(buildid)s/source" % {
+        baseurl = "%(url)s/cache/tasks/%(taskid)s/source" % {
             "url": config['runtime']['url'],
-            "buildid": str(buildid)
+            "taskid": str(extra_args['id'])
         }
         extra_args['base_url'] = baseurl
         repo_base = config['cache']['repos']
+
+        if '/' in kwargs['reponame']:
+            reponame = kwargs['reponame'].split('/')[0]
+            division = kwargs['reponame'].split('/')[1]
+        else:
+            reponame = kwargs['reponame']
+            division = None
+
         archives = []
-        repo_json = os.path.join(repo_base, kwargs['reponame'], "%s.json" % kwargs['reponame'])
+        repo_json = os.path.join(repo_base, reponame, "%s.json" % reponame)
         if os.path.exists(repo_json):
             content = json.loads(file(repo_json).read())
             action = kwargs['action'].split('/')[0]
             dist = kwargs['dist']
-            archive = 'deb [trusted=yes] %(repo_url)s/%(repo_name)s/%(action)s %(dist)s main' % {
-                'repo_url': config['runtime']['repo_url'],
-                'repo_name': kwargs['reponame'],
-                'action': kwargs['action'],
-                'dist': dist
-                }
+            if division:
+                archive = 'deb [trusted=yes] %(repo_url)s/%(repo_name)s/%(action)s/%(division)s %(dist)s main' % {
+                    'repo_url': config['runtime']['repo_url'],
+                    'repo_name': reponame,
+                    'action': kwargs['action'],
+                    'division': division,
+                    'dist': dist
+                    }
+            else:
+                archive = 'deb [trusted=yes] %(repo_url)s/%(repo_name)s/%(action)s %(dist)s main' % {
+                    'repo_url': config['runtime']['repo_url'],
+                    'repo_name': reponame,
+                    'action': kwargs['action'],
+                    'dist': dist
+                    }
             archives.append(archive)
 
-        update_json = os.path.join(repo_base, kwargs['reponame'], "update.json")
+        update_json = os.path.join(repo_base, reponame, "update.json")
         if os.path.exists(update_json):
             content = json.loads(file(update_json).read())
             if content.get('basetgz'):
-                for arch, basetgz in content['basetgz'].items():
-                    if arch == kwargs['arch']:
-                        extra_args['basetgz'] = basetgz
+                for basetgz in content['basetgz']:
+                    if basetgz.get(kwargs['arch']):
+                        extra_args['basetgz'] = basetgz[kwargs['arch']]
                         break
+
             if content.get('archives'):
                 archives.extend(content.get('archives'))
         extra_args['archives'] = archives
+
         return self.proxy.build(buildid, builder, files, extra_args)
     
     def proxy_complete(self):

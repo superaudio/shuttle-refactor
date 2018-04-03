@@ -1,5 +1,7 @@
 # apply tasks
-curl -i -H 'Content-Type: application/json' -X POST --data-binary '{"action":"commit","pkgname":"dde-session-ui","reponame":"dde", "source":"https://cr.deepin.io/dde/dde-session-ui#branch=master", "build_args":"use_network=1"}' http://127.0.0.1:5000/api/task/apply
+curl -i -H 'Content-Type: application/json' -X POST --data-binary '{"action":"commit","pkgname":"dde-session-ui","reponame":"dde", "source":"https://cr.deepin.io/dde/dde-session-ui#branch=master", "build_args":["use_network"]}' http://127.0.0.1:5000/api/task/apply
+# rebuild tasks
+curl -i -H 'Content-Type: application/json' -X POST --data-binary '{"taskid": 8}' http://127.0.0.1:5000/api/task/rebuild
 
 # initial repo
 curl -i -X POST -F "reponame=dde" -F "config=@config/default.repo.json" http://127.0.0.1:5000/api/repo/create
