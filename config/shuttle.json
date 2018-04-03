@@ -15,6 +15,7 @@
         "url": "http://10.0.13.190:5000",
         "debug"  : true,
         "title"  : "Shuttle",
+        "expired_days": 7,
         "database_uri": "sqlite:///tmp/shuttle.sqlite",
         "secret_token": "hello,world!"
     },

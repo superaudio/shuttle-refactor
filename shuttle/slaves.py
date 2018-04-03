@@ -11,6 +11,9 @@ from twisted.internet.task import LoopingCall
 import sys
 import os
 
+from datetime import timedelta
+import shutil
+
 from models import Job, Package
 from models import JobStatus, UploadStatus
 import sqlobject
@@ -273,12 +276,29 @@ class ShuttleBuilders(threading.Thread):
                 package.upload_status = UploadStatus.UPLOAD_FAILED
             else:
                 package.upload_status = UploadStatus.UPLOAD_OK
+    
+    def destroy_task(self, package):
+        task_cache = os.path.join(config['cache']['tasks'], str(package.id))
+        if os.path.exists(task_cache):
+            shutil.rmtree(task_cache)
+
+        for job in Job.selectBy(packageID=package.id):
+            job.destroySelf()
+        package.destroySelf()
+    
+    def get_expired_task(self):
+        expired_days = config['runtime'].get('expired_days', 7)
+        now = sqlobject.DateTimeCol.now()
+        for package in Package.selectBy():
+            if now - package.expired > timedelta(days=expired_days):
+                self.destroy_task(package)
 
     def loop(self):
         print("start builder loop.")
         LoopingCall(self.start_jobs).start(10)
         LoopingCall(self.finish_jobs).start(15)
         LoopingCall(self.upload_tasks).start(20)
+        LoopingCall(self.get_expired_task).start(3600)
 
     def register_slave(self, slave):
         for _slave in self.slaves:

@@ -53,6 +53,12 @@ JobFailedStatus = (
 
 status_lock = threading.Lock()
 
+def try_strftime(datetimeobj, timeformat='%y-%m-%d %I:%M:%S %p', default='waiting'):
+    if datetimeobj:
+        return datetimeobj.strftime(timeformat)
+    else:
+        return default
+
 class Package(threading.Thread, sqlobject.SQLObject):
     """ 
     check package with pkgname, pkgver, reponame, action, hashsum
@@ -65,7 +71,7 @@ class Package(threading.Thread, sqlobject.SQLObject):
     build_args     = sqlobject.StringCol(default=None)
     
     hashsum        = sqlobject.StringCol(default=None)
-    expired        = sqlobject.StringCol(default=None)
+    expired        = sqlobject.DateTimeCol(default=sqlobject.DateTimeCol.now())
 
     priority       = sqlobject.StringCol(default=None)
     jobs           = sqlobject.MultipleJoin('Job', joinColumn='package_id')
@@ -96,10 +102,12 @@ class Package(threading.Thread, sqlobject.SQLObject):
         result = {
             "id": self.id,
             "pkgname": self.pkgname, "pkgver": self.pkgver, "reponame": self.reponame,
-            "action": self.action, "hashsum": self.hashsum, "expired": self.expired,
+            "action": self.action, "hashsum": self.hashsum, 
+            "expired": try_strftime(self.expired, default='never'),
             "priority": self.priority, "triggered": self.triggered, 
             "build_args":  self.build_args.split('|') if self.build_args else [],
-            "upload_status": UploadStatus.whatis(self.upload_status), "status_changed": str(self.status_changed)
+            "upload_status": UploadStatus.whatis(self.upload_status), 
+            "status_changed": try_strftime(self.status_changed)
         }
         return result
 
@@ -167,12 +175,14 @@ class Job(sqlobject.SQLObject):
         sqlobject.SQLObject.__setattr__(self, name, value)
 
     def dict(self):
+
         result = {
-            "id": self.id, "task": "%s/%s" % (self.dist, self.arch),
+            "id": self.id, "task": "%s/%s" % (self.dist, self.arch), "build_host": self.build_host, 
             "status": JobStatus.whatis(self.status), "dist": self.dist, "arch": self.arch,
-            "creation_date": str(self.creation_date), "build_host": self.build_host, 
-            "build_start": str(self.build_start), "build_end": str(self.build_end), 
-            "status_changed": str(self.status_changed)
+            "creation_date": try_strftime(self.creation_date), 
+            "build_start": try_strftime(self.build_start), 
+            "build_end": try_strftime(self.build_end), 
+            "status_changed": try_strftime(self.status_changed)
         }
         return result
 
