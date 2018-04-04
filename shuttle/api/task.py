@@ -87,6 +87,7 @@ class Task(APIResource):
 
             repo_config = json.load(open(repo_config, "r"))
             action_config = repo_config.get(content['action'])
+
             if not action_config:
                 raise OSError("Repository is not support this action.")
             if action_config.get('division'):

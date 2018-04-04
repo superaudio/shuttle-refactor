@@ -43,9 +43,11 @@ class RepositoryException(Exception):
 
 class Repository():
     def __init__(self, repo_path, name):
-        self.name = name
         self.repo_path = repo_path
-        config = os.path.join(repo_path, name, "%s.json" % name)
+        self.name = name
+        _name = name.split('/')[0]
+        config = os.path.join(repo_path, _name, "%s.json" % _name)
+
         if not os.path.exists(config):
             raise Repository("Repository config file: %s has not exists, Please create it first." % config)
         
@@ -119,7 +121,13 @@ class Repository():
         dist = self.config[action]['dist']
         arches = self.config[action]['arches']
 
-        basepath = os.path.join(self.repo_path, self.name, base)
+        if config.get('division'):
+            reponame = self.name.split('/')[0]
+            division = self.name.split('/')[1]
+            basepath = os.path.join(self.repo_path, reponame, base, division)
+        else:
+            basepath = os.path.join(self.repo_path, self.name, base)
+
         with open(logfile, "w") as log:
             log.write("Start at %s\n" % datetime.datetime.now().strftime("%A %d. %B %Y"))
             arches = self.config[action].get('arches')
@@ -177,6 +185,7 @@ class FakeRepository():
             description = 'Pretends to be repository',
             usage='''%(prog)s <command> [<args>]'''
             )
+
         parser.add_argument('command', help='Subcommand to run')
         args = parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):

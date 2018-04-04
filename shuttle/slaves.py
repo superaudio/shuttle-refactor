@@ -292,6 +292,7 @@ class ShuttleBuilders(threading.Thread):
             command = "../tools/repo.py include --cache %(cache)s --base %(base)s" % {
                 "cache": task_cache, "base": package.action
                 }
+
             status, _ = functions.getstatusoutput(command, env=env)
             if status != 0:
                 package.upload_status = UploadStatus.UPLOAD_FAILED

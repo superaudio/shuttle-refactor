@@ -88,12 +88,13 @@ class Repo(APIResource):
                 )
             repo_base = config['cache']['repos']
             reponame = content['reponame'].value
-
-            repo_json = os.path.join(repo_base, reponame, 'update.json')
+           
             try:
                 update_config = json.loads(eval(content['config'].value))
+                repo_json = os.path.join(repo_base, reponame, '.update.json')
                 with open(repo_json, 'w') as fp:
                     fp.write(json.dumps(update_config, indent=4))
+                os.rename(repo_json, os.path.join(repo_base, reponame, 'update.json'))
                 return {'status': 0, 'message': 'update done'}
 
             except:
