@@ -59,6 +59,28 @@ def try_strftime(datetimeobj, timeformat='%y-%m-%d %I:%M:%S %p', default='waitin
     else:
         return default
 
+class Log(sqlobject.SQLObject):
+    timestamp     = sqlobject.DateTimeCol(default=sqlobject.DateTimeCol.now())
+    status        = sqlobject.BoolCol(default=True)
+    section       = sqlobject.StringCol()
+    message       = sqlobject.StringCol()
+
+    def __init__(self, *args, **kwargs):
+        sqlobject.SQLObject.__init__(self, *args, **kwargs)
+
+    def __setattr__(self, name, value):
+        sqlobject.SQLObject.__setattr__(self, name, value)
+    
+    def dict(self):
+        result = {
+            "id": self.id,
+            "timestamp": try_strftime(self.timestamp, default='never'),
+            "section": self.section,
+            "status":  self.status,
+            "message": self.message
+        }
+        return result
+
 class Package(threading.Thread, sqlobject.SQLObject):
     """ 
     check package with pkgname, pkgver, reponame, action, hashsum
@@ -171,7 +193,7 @@ class Job(sqlobject.SQLObject):
     def __setattr__(self, name, value):
         if name == "status":
             self.status_changed = sqlobject.DateTimeCol.now()
-
+ 
         sqlobject.SQLObject.__setattr__(self, name, value)
 
     def dict(self):

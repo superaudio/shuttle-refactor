@@ -8,10 +8,28 @@ import traceback
 from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
 
+from models import Log
 from config import config
 
 class LogResource(APIResource):
     isLeaf = False
+
+    @GET('/monitor')
+    def get_moitory(self, request):
+        def get_result():
+            logs = Log.selectBy().orderBy("-id")[:20]
+            result = []
+            for log in logs:
+                result.append(log.dict())
+            
+            if request.args.get('reverse'):
+                result.reverse()
+
+            return {'result': result}
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
     
     @GET('/task/(?P<id>[^/]+)')
     def get_uploadlog(self, request, id):

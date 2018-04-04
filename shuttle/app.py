@@ -8,7 +8,7 @@ from config import config
 from api import ApiResource
 from views import ViewsResource
 
-from models import Job, JobStatus, Package
+from models import Job, JobStatus, Package, Log
 from slaves import ShuttleBuilders
 
 class CacheResource(resource.Resource):
@@ -51,6 +51,7 @@ if __name__ == "__main__":
     sqlobject.sqlhub.processConnection = sqlconnection
     Package.createTable(ifNotExists=True)
     Job.createTable(ifNotExists=True)
+    Log.createTable(ifNotExists=True)
     site = server.Site(RootResource())
     builders = ShuttleBuilders()
     

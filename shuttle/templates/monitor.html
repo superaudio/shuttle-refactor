@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+  {% with active_tab = "monitor" %}
+    {% include "navbar.html" %}
+  {% endwith %}
+{% endblock %}
+
+{% block container %}
+<div class="container">
+    <div class="row">
+        <div class="list-group">
+            <ul id="tasklists-tree">
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style type="text/css">
+.colorize-error {color: red;  font-weight:bold; padding: 0 10px 0 0;}
+.colorize-info {color: green; font-weight:bold; padding: 0 10px 0 0;}
+.colorize-comment {color: gray; font-weight:bold; padding: 0 10px 0 0;}
+.comefromtop {animation: comefromtop 0.5s;}
+.pushdown {animation: pushdown 0.5s;}
+ul {list-style: none;margin: 0;padding: 0;}
+@-webkit-keyframes comefromtop {
+  0%   { opacity:0; -webkit-transform: translateY(-100%); }
+  100% { opacity:1; -webkit-transform: translateY(0px);   }
+}
+@-webkit-keyframes pushdown {
+  0%   { /*opacity:0;*/ -webkit-transform: translateY(-10%); }
+  100% { /*opacity:1;*/ -webkit-transform: translateY(0);   }
+}
+</style>
+{% endblock %}
+
+{%block extra_scripts %}
+<script>
+    function buildsnip(element){
+        var id = 'order-' + element['id'];
+        var val = '<div class="alert alert-tasklist">'
+        if (element['status']) {
+            val += '<span class="colorize-info">';
+        } else {
+            val += '<span class="colorize-error">';
+        }
+        val += element['timestamp'] + '</span>' + element['message'] + '</div>';
+        return val;
+    }
+
+    function add() {
+        var itemid = $("#tasklists-tree li:first").attr('id').slice(6);
+        $.ajax({
+            type: 'GET',
+            dataType: 'json',
+            url: '/api/log/monitor?reverse=1',
+            success: function(data) {
+                data['result'].forEach(function(element){
+                    if (element['id'] <= itemid)
+                        return
+                    var id = 'order-' + element['id'];
+                    var val = buildsnip(element);
+                    var item = $('<li></li>').attr('id', id).html(val);
+                    $('#tasklists-tree').prepend(item).addClass('pushdown');
+                    setTimeout(function() {
+                        $('#tasklists-tree').removeClass('pushdown');
+                    }, 1000);
+                });
+            }
+        });
+    }
+    $(document).ready(function() {
+        $.ajax({
+            type: 'GET',
+            dataType: 'json',
+            url: '/api/log/monitor',
+            success: function(data) {
+                data['result'].forEach(function(element){
+                    var id = 'order-' + element['id'];
+                    var val = buildsnip(element)
+                    var item = $('<li></li>').attr('id', id).html(val);
+                    $('#tasklists-tree').append(item)
+                });
+            }
+        });
+        setInterval(add, 5 * 1000);
+    });
+</script>
+{% endblock %}

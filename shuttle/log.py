@@ -1,7 +1,7 @@
 import logging
 from . import config
 
-class Log(object):
+class ShuttleLog(object):
     
     _instance = None
 

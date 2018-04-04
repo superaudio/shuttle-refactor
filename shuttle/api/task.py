@@ -8,7 +8,7 @@ import traceback
 from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
 
-from models import Package, Job
+from models import Package, Job, Log
 from models import JobStatus, UploadStatus
 from config import config
 
@@ -47,22 +47,6 @@ def add_task(kwargs):
 
 class Task(APIResource):
     isLeaf = False
-
-    @GET('/demo')
-    def demo(self, request):
-        def get_result():
-            kwargs = {
-                'pkgname': 'dummy', 'pkgver': '1.0',
-                'reponame': 'reponame', 'action': 'action',
-                'hashsum': 'hashsum'
-                }
-            for i in range(100):
-                Package(**kwargs)
-            return {'message':'done'}
-        d = threads.deferToThread(get_result)
-        d.addCallback(self.callback, request)
-        d.addErrback(self.failure, request)
-        return server.NOT_DONE_YET
 
     @POST('/apply')
     def post_apply(self, request):
@@ -113,6 +97,8 @@ class Task(APIResource):
 
             if content.get('debian'):
                 command += " --debian %(debian)s" % {"debian": content['debian']}
+            if content.get('version'):
+                command += " --version %(version)s" % {"version": content['version']}
 
             try:
                 """result will like blow
@@ -191,6 +177,7 @@ class Task(APIResource):
                         'dest': os.path.join(source_cache, file)
                         })
 
+            Log(section='task', message='apply %(pkgname)s %(pkgver)s to %(reponame)s' % package.dict())
             os.system("rm -rf %s" % result['path'])
             return package.dict()
 
@@ -232,6 +219,7 @@ class Task(APIResource):
                 for job in Job.selectBy(packageID=package.id):
                     if job.status >= JobStatus.BUILDING:
                         job.status = JobStatus.WAIT
+                Log(section='task', message='rebuild %(pkgname)s %(pkgver)s to %(reponame)s' % package.dict())
                 message = "package set rebuilded"
             else:
                 message = "no package set rebuilded"

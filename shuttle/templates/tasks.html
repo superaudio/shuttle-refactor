@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+  {% with active_tab = "tasks" %}
+    {% include "navbar.html" %}
+  {% endwith %}
+{% endblock %}
+
+{% block container %}
+<input type="hidden" value="{{ time }}" id='time'>
+<input type="hidden" value="{{ columns }}" id='columns'>
+
+<div class="container-fluid">
+  <table id="tasks-table" class="table table-bordered table-striped">
+    <thead>
+    <tr>
+      <th>BuildId</th>
+      <th>Action</th>
+      <th>Pkgname</th>
+      <th>Version</th>
+      <th>Reponame</th>
+      <th>Triggered</th>
+      <th>Additional Args</th>
+      <th>States</th>
+      <th>States Changed</th>
+      <th>Builds</th>
+    </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+  <ul id="pagination">
+  </ul>
+</div>
+<div class="modal fade" id="logModal" tabindex="-1" role="dialog" aria-labelledby="actionLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                
+                <h4 class="modal-title" ></h4>
+                
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    $(document).on('click', '.openLogModal', function () {
+      var url = $(this).attr('href');
+      var tr = $(this).parent().parent();
+      var title = $(tr).find("td").eq(2).html() + ' ' + $(tr).find("td").eq(3).html();
+      $.ajax({ 
+        type: 'GET', 
+        dataType: 'json',
+        url: '/api/log/task/' + $(tr).find("td").eq(0).html(), 
+        success: function (data) { 
+            $('.modal-title').text(title);
+            $('.modal-body').html(data["log"].replace(/\n/g, '</br>'));
+            $('#logModal').modal({show:true});
+        }
+      });
+    });
+</script>
+{% endblock %}

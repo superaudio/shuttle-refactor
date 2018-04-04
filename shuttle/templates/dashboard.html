@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+  {% with active_tab = "dashboard" %}
+    {% include "navbar.html" %}
+  {% endwith %}
+{% endblock %}
+
+{% block container %}
+  <div class="container-fluid">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+          
+    <table id="workers-table" class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Worker Name</th>
+          <th>Url</th>
+          <th>Enabled</th>
+          <th>Status</th>
+          <th>Uploading</th>
+          <th>Supports</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+
+        </div>
+    </div>
+
+{% endblock %}

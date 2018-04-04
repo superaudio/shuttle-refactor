@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+  {% with active_tab = "repository" %}
+    {% include "navbar.html" %}
+  {% endwith %}
+{% endblock %}
+
+{% block container %}
+<section class="row-section">
+    <div class="container">
+        <div class="col-md-10 offset-md-1 row-block">
+            <ul id="sortable">
+                {% for name, infos in repos.items() %}
+                <li>
+                    <div class="media">
+                        <div class="media-left align-self-center">
+                            <img src="/static/img/application-x-deb.svg" class="openEditorModal" href={{ name }}>
+                        </div>
+                        <div class="media-body">
+                            <h2>{{ name }}<small>package source developed by ci.deepin.org</small></h2>
+                            </br><p></p>
+                            <table class="table table-stripped table-bordered">
+                                <thead>
+                                    <tr><th>Release</th><th>Architectures</th><th>Sources</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for key, info in infos.items() %}
+                                    {% if not info.division %}
+                                    <tr>
+                                        <td><img src="">{{ key }}</td>
+                                        <td>
+                                            {% for arch in info.arches %}
+                                            <span class="label label-default">{{ arch }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td class="rightmost">
+                                            <a class="label label-info">{{ info.sources }}</a>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td><img src="">{{ key }}</td>
+                                        <td>
+                                            {% for arch in info.arches %}
+                                            <span class="label label-default">{{ arch }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td class="rightmost">
+                                            <a class="label label-success" href="/cache/repos/{{ name }}/release-candidate/">Show More</a>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+<div class="modal fade" id="editorModal" tabindex="-1" role="dialog" aria-labelledby="actionLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                
+                <h4 class="modal-title" ></h4>
+                
+            </div>
+            <div class="alert alert-success update-alert update-alert-success">
+                <button type="button" class="close" data-dismiss="alert">x</button>
+                <strong>Success! </strong>
+                Update repo info.
+            </div>
+            <div class="alert alert-danger update-alert update-alert-danger">
+                    <button type="button" class="close" data-dismiss="alert">x</button>
+                    <strong>Failed! </strong>
+                    Update repo info.
+                </div>
+            <div class="modal-body">
+                <textarea id="updateJsonArea" style="width:100%; margin-right: -15px; min-height: 350px;">
+
+                </textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="saveJsonUpdate btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    $(document).on('click', '.openEditorModal', function () {
+      var title = $(this).attr('href');
+      $.ajax({ 
+        type: 'GET', 
+        dataType: 'json',
+        url: '/api/repo/' + title + '/update',
+        success: function (data) { 
+            $(".update-alert").hide();
+            $(".modal-title").text(title);
+            var pretty = JSON.stringify(data['config'], undefined, 4);
+            $("#updateJsonArea").val(pretty);
+            $(".saveJsonUpdate").attr('href', title)
+            $('#editorModal').modal({show:true});
+        }
+      });
+    });
+    $(document).on('click', '.saveJsonUpdate', function () {
+      var title = $(this).attr('href');
+      var textarea = $("#updateJsonArea").val();
+      console.log(JSON.stringify(textarea));
+      var update = {
+          'reponame': title,
+          'config': JSON.stringify(textarea)
+      }
+      $.ajax({ 
+        type: 'POST', 
+        dataType: 'json',
+        data: update,
+        url: '/api/repo/update',
+        success: function (data) {
+            $(".update-alert-success").fadeTo(2000, 500).slideUp(500, function(){
+                $(".update-alert-success").slideUp(500);
+            });
+        },
+        error: function(){
+            $(".update-alert-danger").fadeTo(2000, 500).slideUp(500, function(){
+                $(".update-alert-danger").slideUp(500);
+            });
+        }
+      });
+    });
+</script>
+{% endblock %}

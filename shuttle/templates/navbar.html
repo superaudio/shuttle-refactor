@@ -1,0 +1,23 @@
+<div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container-fluid">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+      <a class="brand" href="">Shuttle</a>
+      <div class="nav-collapse collapse">
+        <ul class="nav">
+            <li {% if active_tab == "dashboard" %}class="active"{% endif %}><a href="/dashboard">Dashboard</a></li>
+            <li {% if active_tab == "tasks" %}class="active"{% endif %}><a href="/tasks">Tasks</a></li>
+            <li {% if active_tab == "repository" %}class="active"{% endif %}><a href="/repository">Repository</a></li>
+            <li {% if active_tab == "monitor" %}class="active"{% endif %}><a href="/monitor">Monitor</a></li>
+        </ul>
+        <ul class="nav pull-right">
+          <li><a href="logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

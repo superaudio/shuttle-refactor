@@ -1,0 +1,12 @@
+<textarea id="myTextArea" cols=50 rows=10></textarea>
+
+<button onclick="prettyPrint()">Pretty Print</button>
+
+<script>
+    function prettyPrint() {
+    var ugly = document.getElementById('myTextArea').value;
+    var obj = JSON.parse(ugly);
+    var pretty = JSON.stringify(obj, undefined, 4);
+    document.getElementById('myTextArea').value = pretty;
+}
+</script>

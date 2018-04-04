@@ -9,6 +9,7 @@ from twisted.internet import defer, threads
 from twisted.web import resource, server
 from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
+from models import Log
 
 import cgi
 
@@ -44,7 +45,8 @@ class Repo(APIResource):
             command = "../tools/repo.py create"
             status, _message = functions.getstatusoutput(command, env=env)
             if status == 0:
-                message = "repo create succeed."
+                message = "repo %s create succeed." % repo_uri
+                Log(section='repository', message=message)
             else:
                 message = "repo create failed. %s " % _message
             
@@ -69,6 +71,7 @@ class Repo(APIResource):
                     "archives": ["deb http://pools.corp.deepin.com/deepin unstable main contrib"]
                     }
                 result['timestamp'] = datetime.datetime.now().strftime('%s')
+            
             return {'status': 0, 'config': result}
 
         d = threads.deferToThread(get_result)
@@ -95,6 +98,7 @@ class Repo(APIResource):
                 with open(repo_json, 'w') as fp:
                     fp.write(json.dumps(update_config, indent=4))
                 os.rename(repo_json, os.path.join(repo_base, reponame, 'update.json'))
+                Log(section='repository', message='update %s json config' % reponame)
                 return {'status': 0, 'message': 'update done'}
 
             except:
@@ -130,6 +134,7 @@ class Repo(APIResource):
                     "base": base_repo,
                     "division": division_name
             }
+            Log(section='repository', message='create division reponame %s/%s' % (repo_uri, division_name))
             return dict(zip(['status', 'message'], functions.getstatusoutput(command, env=env)))
 
 
@@ -147,11 +152,10 @@ class Repo(APIResource):
                 raise OSError("reponame should not be none")
 
             repo_base = config['cache']['repos']
-            
-                
             repo_path = os.path.join(repo_base, repo_uri)
 
             if os.path.exists(repo_path):
+                Log(section='repository', message='destroy repository %s' % repo_uri)
                 return dict(zip(['status', 'message'], 
                     functions.getstatusoutput("rm -r %s" % repo_path, env=env)
                 ))
