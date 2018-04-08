@@ -114,7 +114,7 @@ class Task(APIResource):
             except:
                 raise
 
-            result = eval(result)
+            result = json.loads(result)
 
             for file in result['files']:
                 if file.endswith('.dsc'):
@@ -139,14 +139,19 @@ class Task(APIResource):
             kwargs = {
                 'pkgname': content['pkgname'], 'pkgver': result['version'],
                 'reponame': content['reponame'], 'action': content['action'],
-                'hashsum': result['hashsum']
+                'hashsum': result['revision']
                 }
             
-            build_args = None
+            build_args = []
             if content.get('build_args'):
-                build_args = content['build_args']
-                if isinstance(build_args, list):
-                    build_args = '|'.join(build_args)
+                build_args.extend(content['build_args'])
+
+            if result.get('build_args'):
+                build_args.extend(result['build_args'])
+
+            build_args = set(build_args)
+            build_args = '|'.join(build_args)
+
             
             if Package.selectBy(**kwargs).count() != 0:
                 package = Package.selectBy(**kwargs).orderBy('-id')[0]

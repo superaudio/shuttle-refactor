@@ -6,6 +6,7 @@ import tempfile
 import time
 import json
 from threading import Timer
+import json
 
 def get_builder_name(default="shuttle"):
     return os.environ.get("DEBFULLNAME", default)
@@ -289,6 +290,7 @@ class GitBuilder():
             "dist": config[action].get("dist", "unrelease"),
             "urgency": config[action].get("urgency", "low"),
             "version": pkgver,
+            "build_args": config.get('build_args', []),
             "quilt": config[action].get('quilt', False)
         }
 
@@ -299,7 +301,7 @@ class GitBuilder():
             if os.path.isfile(os.path.join(temp_dir, d)):
                 files.append(d)
 
-        return (pkgver, revision, temp_dir, files)
+        return (temp_dir, files, kwargs)
 
     def archive(self, action, ref=None, version=None):
         self.initial()
@@ -309,12 +311,14 @@ class GitBuilder():
         
         temp_dir = tempfile.mkdtemp(dir=temp_prefix)
         try:
-            _pkgver, _revision, _dir, _files = self._archive(temp_dir, action=action, ref=ref, version=version)
+            _dir, _files, _kwargs = self._archive(temp_dir, action=action, ref=ref, version=version)
         except Exception as e:
             os.system("rm -rf %s" % temp_dir)
             sys.exit(1)
 
-        return {'version': _pkgver, 'path': _dir, 'files': _files, 'hashsum': _revision}
+        result = {"path": _dir, "files": _files}
+        result.update(_kwargs)
+        return json.dumps(result)
 
 if __name__ == "__main__":
     import argparse
