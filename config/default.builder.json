@@ -1,0 +1,26 @@
+{
+    "name": "default",
+    "type": "tarball", 
+    "components": [
+        "main", 
+        "contrib", 
+        "non-free"
+    ], 
+    "extra_packages": [
+        "gnupg",
+        "golang",
+        "dh-golang",
+        "build-essential", 
+        "gnupg",
+        "deepin-keyring",
+        "fakeroot",
+        "qt5-default", 
+        "pkg-config", 
+        "libqt5x11extras5-dev", 
+        "libqt5svg5-dev", 
+        "qttools5-dev-tools", 
+        "libgtk2.0-dev"
+
+    ],
+    "mirror": "http://pools.corp.deepin.com/deepin"
+}
