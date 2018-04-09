@@ -1,8 +1,8 @@
 {
     "cache": {
+        "base"    : "/srv/shuttle-refactor/cache",
         "sources" : "/srv/shuttle-refactor/cache/git-repo",
-        "tasks"   : "/srv/shuttle-refactor/cache/tasks",
-        "repos"   : "/srv/shuttle-refactor/cache/repos"
+        "tasks"   : "/srv/shuttle-refactor/cache/tasks"
     },
     "log": {
         "file": "/srv/shuttle-refactor/shuttle.log",

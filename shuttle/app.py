@@ -43,6 +43,7 @@ if __name__ == "__main__":
     def handle_sigterm(signum, stack):
         print("Interrupted!. Exiting.")
         builders.do_quit.set()
+        builders.cache_slaves()
         for slave in ShuttleBuilders().slaves:
             slave.inactive()
         reactor.stop()

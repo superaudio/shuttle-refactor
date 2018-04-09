@@ -323,6 +323,7 @@ class ShuttleBuilders(threading.Thread):
 
     def loop(self):
         print("start builder loop.")
+        self.load_slaves()
         LoopingCall(self.start_jobs).start(10)
         LoopingCall(self.finish_jobs).start(15)
         LoopingCall(self.upload_tasks).start(20)
@@ -335,6 +336,24 @@ class ShuttleBuilders(threading.Thread):
         slave.active()
         self.slaves.append(slave)
     
+    def cache_slaves(self):
+        _slaves = {}
+        for slave in self.slaves:
+            _slaves[slave.name] = slave.url
+        
+        config_file = os.path.join(config['cache']['base'], 'slaves.json')
+        with open(config_file, 'w') as fp:
+            fp.write(json.dumps(_slaves, indent=4))
+    
+    def load_slaves(self):
+        config_file = os.path.join(config['cache']['base'], 'slaves.json')
+        if os.path.exists(config_file):
+            print("loading cached slaves...")
+            _slaves = json.loads(file(config_file).read())
+            for name, url in _slaves.items():
+                slave = BuilderSlave(name, url)
+                self.register_slave(slave)
+    
     def toggle_slave(self, slave_name):
         for _slave in self.slaves:
             if _slave.name == slave_name:
@@ -346,6 +365,8 @@ class ShuttleBuilders(threading.Thread):
     
     def handle_sigterm(self, signum, stack):
         self.do_quit.set()
+        self.cache_slaves()
+        # save slave to config file
         for slave in self.slaves:
             slave.inactive()
 
