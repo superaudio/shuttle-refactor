@@ -1,5 +1,6 @@
 {
     "cache": {
+        "base"    : "/tmp/cache",
         "sources" : "/tmp/cache/git-repo",
         "tasks"   : "/tmp/cache/tasks",
         "repos"   : "/tmp/cache/repos"
