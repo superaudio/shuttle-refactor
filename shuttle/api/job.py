@@ -14,6 +14,7 @@ from config import config
 
 from slaves import ShuttleBuilders, BuilderSlave
 
+
 class JobResource(APIResource):
     isLeaf = False
 
@@ -40,9 +41,9 @@ class JobResource(APIResource):
 
     @POST('/rebuild')
     def post_rebuild(self, request):
-        def get_result():
-            content = json.loads(request.content.read())
-            id = content.get('id', 0)
+        content = json.loads(request.content.read())
+        id = content.get('id', 0)
+        def get_result(id):
             if Job.selectBy(id=id).count() != 0:
                 job = Job.selectBy(id=id)[0]
                 if job.status in JobFailedStatus:
@@ -55,7 +56,7 @@ class JobResource(APIResource):
 
             return {'message': message}
 
-        d = threads.deferToThread(get_result)
+        d = threads.deferToThread(get_result, id)
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET

@@ -246,24 +246,19 @@ var flower = (function () {
         });
     }
 
-    function on_task_timeout(event) {
+    function on_job_rebuild(event) {
         event.preventDefault();
         event.stopPropagation();
 
-        var workername = $('#workername').text(),
-            taskname = $(event.target).closest("tr").children("td:eq(0)").text(),
-            timeout = $(event.target).siblings().closest("input").val();
-
-        taskname = taskname.split(' ')[0]; // removes [rate_limit=xxx]
-
+        var jobid = $('#job_id').text();
         $.ajax({
             type: 'POST',
-            url: url_prefix() + '/api/task/timeout/' + taskname,
+            url: url_prefix() + '/api/job/rebuild',
             dataType: 'json',
-            data: {
-                'workername': workername,
-                'type': timeout,
-            },
+            contentType: "application/json; charset=utf-8",  
+            data: JSON.stringify({
+                'id': jobid
+            }),
             success: function (data) {
                 show_success_alert(data.message);
             },
@@ -273,67 +268,15 @@ var flower = (function () {
         });
     }
 
-    function on_task_rate_limit(event) {
+    function on_job_terminate(event) {
         event.preventDefault();
         event.stopPropagation();
 
-        var workername = $('#workername').text(),
-            taskname = $(event.target).closest("tr").children("td:eq(0)").text(),
-            ratelimit = $(event.target).prev().val();
-
-        taskname = taskname.split(' ')[0]; // removes [rate_limit=xxx]
+        var jobid = $('#jobid').text();
 
         $.ajax({
             type: 'POST',
-            url: url_prefix() + '/api/task/rate-limit/' + taskname,
-            dataType: 'json',
-            data: {
-                'workername': workername,
-                'ratelimit': ratelimit,
-            },
-            success: function (data) {
-                show_success_alert(data.message);
-                setTimeout(function () {
-                    $('#tab-limits').load('/worker/' + workername + ' #tab-limits').fadeIn('show');
-                }, 10000);
-            },
-            error: function (data) {
-                show_error_alert(data.responseText);
-            }
-        });
-    }
-
-    function on_task_revoke(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        var taskid = $('#taskid').text();
-
-        $.ajax({
-            type: 'POST',
-            url: url_prefix() + '/api/task/revoke/' + taskid,
-            dataType: 'json',
-            data: {
-                'terminate': false,
-            },
-            success: function (data) {
-                show_success_alert(data.message);
-            },
-            error: function (data) {
-                show_error_alert(data.responseText);
-            }
-        });
-    }
-
-    function on_task_terminate(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        var taskid = $('#taskid').text();
-
-        $.ajax({
-            type: 'POST',
-            url: url_prefix() + '/api/task/revoke/' + taskid,
+            url: url_prefix() + '/api/task/terminate/' + jobid,
             dataType: 'json',
             data: {
                 'terminate': true,
@@ -677,11 +620,9 @@ var flower = (function () {
         on_pool_autoscale: on_pool_autoscale,
         on_add_consumer: on_add_consumer,
         on_cancel_consumer: on_cancel_consumer,
-        on_task_timeout: on_task_timeout,
-        on_task_rate_limit: on_task_rate_limit,
         on_cancel_task_filter: on_cancel_task_filter,
-        on_task_revoke: on_task_revoke,
-        on_task_terminate: on_task_terminate,
+        on_job_rebuild: on_job_rebuild,
+        on_job_terminate: on_job_terminate,
     };
 
 }(jQuery));

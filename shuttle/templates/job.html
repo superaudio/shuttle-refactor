@@ -10,15 +10,15 @@
 <div id='task-page' class="container-fluid">
   <div class="row-fluid">
     <div class="span12">
-      <div class="page-header">
+      <div class="page-header span10">
         <p id="job_id" class="hidden">{{ jobid }}</p>
         <p id="job_status" class="hidden"> {{ job.status }}</p>
         <h2>{{ job.pkgname }}
           <small>{{ job.pkgver }}</small>
           {% if job.status == "BUILDING" %}
-              <button style="float: right" class="btn btn-danger" onclick="flower.on_task_terminate(event)">Terminate</button>
+              <button style="float: right" class="btn btn-danger" onclick="flower.on_job_terminate(event)">Terminate</button>
           {% elif job.status == "FAILED" %}
-              <button  style="float: right" class="btn btn-info" onclick="flower.on_task_revoke(event)">Rebuild</button>
+              <button  style="float: right" class="btn btn-info" onclick="flower.on_job_rebuild(event)">Rebuild</button>
           {% endif %}
         </h2>
       </div>
