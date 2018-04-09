@@ -1,22 +1,22 @@
 {
     "cache": {
-        "sources" : "/tmp/cache/git-repo",
-        "tasks"   : "/tmp/cache/tasks",
-        "repos"   : "/tmp/cache/repos"
+        "sources" : "/srv/shuttle-refactor/cache/git-repo",
+        "tasks"   : "/srv/shuttle-refactor/cache/tasks",
+        "repos"   : "/srv/shuttle-refactor/cache/repos"
     },
     "log": {
-        "file": "/tmp/log.log",
+        "file": "/srv/shuttle-refactor/shuttle.log",
         "time_format": ""
     },
     "runtime": {
         "ip"     : "0.0.0.0",
-        "port"   : 5000,
-        "repo_url" : "http://10.0.13.190:5000/cache/repos",
-        "url": "http://10.0.13.190:5000",
+        "port"   : 5001,
+        "repo_url" : "http://10.0.13.190:5001/cache/repos",
+        "url": "http://10.0.10.29:5001",
         "debug"  : true,
         "title"  : "Shuttle",
         "expired_days": 7,
-        "database_uri": "sqlite:///tmp/shuttle.sqlite",
+        "database_uri": "sqlite:///srv/shuttle-refactor/shuttle.sqlite",
         "secret_token": "hello,world!"
     },
     "notify": {

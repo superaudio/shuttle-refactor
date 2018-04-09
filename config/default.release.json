@@ -13,6 +13,5 @@
 		"quilt": true,
 		"pkgver": "echo $(git describe --abbrev=0 --tags %(ref)s)~next",
 		"dist": "unstable"
-	},
-	"build_args": ["use_network"]
+	}
 }
