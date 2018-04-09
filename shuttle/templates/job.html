@@ -15,10 +15,10 @@
         <p id="job_status" class="hidden"> {{ job.status }}</p>
         <h2>{{ job.pkgname }}
           <small>{{ job.pkgver }}</small>
-          {% if job.status == "STARTED" %}
+          {% if job.status == "BUILDING" %}
               <button style="float: right" class="btn btn-danger" onclick="flower.on_task_terminate(event)">Terminate</button>
-          {% elif job.status == "WAIT" or job.status == "RETRY" %}
-              <button  style="float: right" class="btn btn-danger" onclick="flower.on_task_revoke(event)">Revoke</button>
+          {% elif job.status == "FAILED" %}
+              <button  style="float: right" class="btn btn-info" onclick="flower.on_task_revoke(event)">Rebuild</button>
           {% endif %}
         </h2>
       </div>

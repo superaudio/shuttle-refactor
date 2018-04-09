@@ -53,6 +53,11 @@ class Workers(APIResource):
         def get_result():
             if name is None or url is None:
                 return {'message': 'register slave failed.'}
+            
+            # check if slave has already registered
+            for slave in ShuttleBuilders().slaves:
+                if slave.url == url or slave.name == name:
+                    return {'message': 'some slave has already registerd!'}
 
             slave = BuilderSlave(name, url)
             ShuttleBuilders().register_slave(slave)

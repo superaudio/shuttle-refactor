@@ -151,6 +151,8 @@ class Task(APIResource):
 
             build_args = set(build_args)
             build_args = '|'.join(build_args)
+            if build_args.startswith('|'):
+                build_args = build_args[1:]
 
             
             if Package.selectBy(**kwargs).count() != 0:

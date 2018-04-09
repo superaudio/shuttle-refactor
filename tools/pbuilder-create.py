@@ -15,6 +15,7 @@ class PBuilder():
         self._json  =  json_file
         self.config  =  json.load(open(self._json, "r"))
         self.config.update({'arch': arch, 'dist': dist})
+        self.cachepath = cachepath
         self.basetgz = os.path.join(cachepath, "base.tgz")
 
     def save(self): 
@@ -31,7 +32,7 @@ class PBuilder():
         
         self.config['build'] = datetime.now().strftime("%Y-%m-%d %H:%M")
         self.config['md5sum'] = md5sum
-        with open(os.path.join(cachepath, "result.json"), "w") as fp:
+        with open(os.path.join(self.cachepath, "result.json"), "w") as fp:
             fp.write(json.dumps(self.config, indent=4))
 
 
@@ -78,7 +79,7 @@ class PBuilder():
 
 if  __name__  == "__main__":
     import argparse
-    parser = argparse.ArgumentParser
+    parser = argparse.ArgumentParser()
     parser.add_argument('--json', required=True)
     parser.add_argument('--dist', default='unstable')
     parser.add_argument('--arch', default='amd64')

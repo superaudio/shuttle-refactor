@@ -41,7 +41,9 @@ def prepare_source():
             print("Clean unused buildtgz")
             subprocess.check_call("rm -f %s-*" % reponame, cwd=kBasetgzCache, shell=True)
             print("Fetching builder runtime: %s" % content['basetgz']['url'])
-            subprocess.check_call("wget -q -t 3 -O %s %s" % (basetgz, content['basetgz']['url']), cwd=kBasetgzCache, shell=True)
+            _basetgz = "%s.%d" % (basetgz, os.getpid())
+            subprocess.check_call("wget -q -t 3 -O %s %s" % (_basetgz, content['basetgz']['url']), cwd=kBasetgzCache, shell=True)
+            subprocess.check_call("mv %s %s" % (_basetgz, basetgz), cwd=kBasetgzCache, shell=True)
             subprocess.check_call("ln -sf %s base.tgz" % cachedtgz, cwd=kBuildDir, shell=True)
     
     print("Fetching builder source: ")

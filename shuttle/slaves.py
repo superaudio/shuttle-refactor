@@ -21,6 +21,7 @@ import sqlobject
 from urlparse import urljoin
 
 from config import config
+from notify import Notify
 import json
 import functions
 
@@ -149,6 +150,9 @@ class BuilderSlave():
                 archives.extend(content.get('archives'))
         extra_args['archives'] = archives
 
+        # notify build 
+        #message_text = "%(pkgname)s - %(pkgver)s to %(reponame)s [%(upload_status)s]" % kwargs
+        #Notify().notify('all', message_text)
         return self.proxy.build(buildid, builder, files, extra_args)
     
     def proxy_complete(self):

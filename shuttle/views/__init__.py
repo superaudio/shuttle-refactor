@@ -1,4 +1,5 @@
 from twisted.web import resource, server
+from twisted.web.util import Redirect
 
 import dashboard
 import tasks
@@ -18,6 +19,7 @@ class ViewsResource(resource.Resource):
         self.putChild("job", tasks.JobView())
         self.putChild("tasks", tasks.TasksView())
         self.putChild("repository", repository.RepoView())
+        self.putChild("", Redirect("/tasks"))
 
     def getChild(self, name, request):
         instance = resource.Resource.getChild(self, name, request)

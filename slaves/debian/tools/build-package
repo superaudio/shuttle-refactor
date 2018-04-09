@@ -12,6 +12,8 @@ kBuildDir = os.path.join(os.path.expanduser('~'),
  
 def parser_pbuilder():
     build_args = ["--no-targz", "--allow-untrusted", "--autocleanaptcache"]
+    env = os.environ.copy()
+    env['USECOLORS'] = 'no'
 
     if not os.path.exists(os.path.join(kCache, 'extra_args.json')):
         print("extra_args.json is missing")
@@ -22,18 +24,21 @@ def parser_pbuilder():
 
     build_args.extend(["--architecture", content.get('arch'), "--distribution", content.get('dist')])
     
+    for _args in content['build_args']:
+        if '=' in _args:
+            key, value = _args.split('=', 1)
+            env.update({key: value})
+    
     if 'use-network' in content['build_args']:
         print("add network connection")
         build_args.append('--use-network')
         build_args.append('yes')
 
-    return build_args
+    return build_args, env
 
 
 def build_package():
-    build_args = parser_pbuilder()
-    env = os.environ.copy()
-    env['USECOLORS'] = 'no'
+    build_args, env = parser_pbuilder()
     build_args.append('--buildplace')
     if os.path.exists(os.path.join(kBuildDir, 'chroot-autobuild-tmpfs')):
         env['APTCACHEHARDLINK'] = 'no'

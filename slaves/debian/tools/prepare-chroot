@@ -32,10 +32,10 @@ def prepare_chroot():
         "dest": os.path.join(kBuildDir, 'chroot-autobuild/etc/apt/sources.list')
         }, shell=True, cwd=kBuildDir)
     
-    if 'use_tmpfs' in content.get('build_args'):
+    if 'notmpfs_build' not in content.get('build_args'):
         print("preparing overlay to speed building up.")
         subprocess.check_call("sudo modprobe overlay -q || true", shell=True)
-        subprocess.check_call("sudo mkdir -p /dev/shm/build-${BUILDID}-shm" % str(kBuildId), shell=True)
+        subprocess.check_call("sudo mkdir -p /dev/shm/build-%s-shm" % str(kBuildId), shell=True)
         subprocess.check_call("sudo mkdir -p /dev/shm/build-%s-work" % str(kBuildId), shell=True)
         subprocess.check_call("mkdir -p chroot-autobuild-tmpfs", cwd=kBuildDir, shell=True)
         
@@ -44,7 +44,7 @@ def prepare_chroot():
         workdir  = "/dev/shm/build-%s-work" % str(kBuildId)
         overlay_cmd = "sudo mount -t overlay overlay -o \
             lowerdir=%(lowerdir)s,upperdir=%(upperdir)s,workdir=%(workdir)s \
-            %(builddir)/chroot-autobuild-tmpfs" % {
+            %(builddir)s/chroot-autobuild-tmpfs" % {
                 "lowerdir": lowerdir, "upperdir": upperdir,
                 "workdir": workdir, "builddir": kBuildDir
             }

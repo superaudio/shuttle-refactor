@@ -9,7 +9,7 @@ from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
 
 from models import Package, Job
-from models import JobStatus
+from models import JobStatus, JobFailedStatus
 from config import config
 
 from slaves import ShuttleBuilders, BuilderSlave
@@ -37,7 +37,29 @@ class JobResource(APIResource):
         d.addCallback(self.callback, request)
         d.addErrback(self.failure, request)
         return server.NOT_DONE_YET
-    
+
+    @POST('/rebuild')
+    def post_rebuild(self, request):
+        def get_result():
+            content = json.loads(request.content.read())
+            id = content.get('id', 0)
+            if Job.selectBy(id=id).count() != 0:
+                job = Job.selectBy(id=id)[0]
+                if job.status in JobFailedStatus:
+                    job.status = JobStatus.WAIT
+                    message = "job is set rebuilded"
+                else:
+                    message = "job cannot set rebuilded"
+            else:
+                message = "no job is set rebuilded"
+
+            return {'message': message}
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+
     @GET('/(?P<id>[^/]+)/log')
     def get_logtail(self, request, id):
         def get_result():
