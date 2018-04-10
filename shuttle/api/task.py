@@ -4,6 +4,7 @@ from twisted.internet import defer, threads
 import json
 import os
 import subprocess
+import shutil
 import traceback
 from txrestapi.resource import APIResource
 from txrestapi.methods import GET, POST, PUT, ALL
@@ -232,6 +233,29 @@ class Task(APIResource):
                 message = "no package set rebuilded"
 
             return {'message': message}
+
+        d = threads.deferToThread(get_result)
+        d.addCallback(self.callback, request)
+        d.addErrback(self.failure, request)
+        return server.NOT_DONE_YET
+    
+    @POST('/destroy')
+    def post_destroy(self, request):
+        def get_result(self, package):
+            content = json.loads(request.content.read(), object_pairs_hook=deunicodify_hook)
+            id = content.get('taskid', 0)
+            if Package.selectBy(id=id).count() != 0:
+                package = Package.selectBy(id=id)[0]
+                task_cache = os.path.join(config['cache']['tasks'], str(package.id))
+                if os.path.exists(task_cache):
+                    shutil.rmtree(task_cache)
+
+                for job in Job.selectBy(packageID=package.id):
+                    job.destroySelf()
+                package.destroySelf()
+                return {'message': "task %s deleted" % str(id)}
+            else:
+                return {'message': 'no task %s found' % str(id)}
 
         d = threads.deferToThread(get_result)
         d.addCallback(self.callback, request)

@@ -299,10 +299,9 @@ class ShuttleBuilders(threading.Thread):
 
             status, _ = functions.getstatusoutput(command, env=env)
             if status != 0:
-                Log(status=False, section='task', message='upload tasks %(pkgname)s %(pkgver)s to %(reponame)' % package.dict())
+                Log(status=False, section='task', message='upload tasks %(pkgname)s %(pkgver)s to %(reponame)s' % package.dict())
                 package.upload_status = UploadStatus.UPLOAD_FAILED
             else:
-                Log(status=True, section='task', message='upload tasks %(pkgname)s %(pkgver)s to %(reponame)' % package.dict())
                 package.upload_status = UploadStatus.UPLOAD_OK
     
     def destroy_task(self, package):

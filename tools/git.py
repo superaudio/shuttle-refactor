@@ -7,6 +7,7 @@ import time
 import json
 from threading import Timer
 import json
+import sys
 
 def get_builder_name(default="shuttle"):
     return os.environ.get("DEBFULLNAME", default)
@@ -177,7 +178,7 @@ class GitBuilder():
             ver = "0.0"
             rev = self.execute('git rev-list --count master', cwd=cwd)
             sha = self.execute(['git rev-parse --short master'], cwd=cwd)
-            pkgver = '%(ver)s+%(rev)s+%(sha)s' % {'ver': '0.0', 'rev':rev, 'sha': sha}
+            stdout = '%(ver)s+r%(rev)s+%(sha)s' % {'ver': '0.0', 'rev':rev, 'sha': sha}
 
         return stdout
 
