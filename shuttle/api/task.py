@@ -114,7 +114,6 @@ class Task(APIResource):
                 result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
             except:
                 raise
-
             result = json.loads(result)
 
             for file in result['files']:
@@ -136,7 +135,6 @@ class Task(APIResource):
             if len(added_arches) == 0:
                 os.system("rm -rf %s" % result['path'])
                 raise OSError("None of architecture support with this action.")
-
             kwargs = {
                 'pkgname': content['pkgname'], 'pkgver': result['version'],
                 'reponame': content['reponame'], 'action': content['action'],
@@ -184,7 +182,6 @@ class Task(APIResource):
                         'source': os.path.join(result['path'], file),
                         'dest': os.path.join(source_cache, file)
                         })
-
             Log(section='task', message='apply %(pkgname)s %(pkgver)s to %(reponame)s' % package.dict())
             os.system("rm -rf %s" % result['path'])
             return package.dict()

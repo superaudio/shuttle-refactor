@@ -52,7 +52,7 @@ class JobResource(APIResource):
                     message = "job is set rebuilded"
                 else:
                     if force:
-                        job.satus = JobStatus.WAIT
+                        job.status = JobStatus.WAIT
                         message = "job force set rebuilded"
                     else:
                         message = "job cannot set rebuilded"
