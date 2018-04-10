@@ -245,7 +245,8 @@ class GitBuilder():
         if ref is None:
             ref = self.source_ref
         
-        revision = self.execute('git rev-parse %s' % ref, cwd=self.source_cache)
+        # we just get the commit hash and not the git rev-paser 
+        revision = self.execute("git log %s | head -1 | sed s/'commit '//" % ref, cwd=self.source_cache)
     
         with open(os.devnull, 'w') as devnull:
             self.check_call("git archive --format=tar --prefix=%s/ %s | (cd %s && tar xvf -)" % 

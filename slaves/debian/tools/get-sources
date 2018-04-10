@@ -68,7 +68,7 @@ def prepare_source():
         changelog = '%(origname)s-%(version)s/debian/changelog' % \
             {"origname": origname, "version": version}
         
-        subprocess.check_call("sed -i s/\(%(origver)s\)/\(%(destver)s\)/ %(changelog)s" % 
+        subprocess.check_call("sed -i s/\(%(origver)s\.*\)/\(%(destver)s\)/ %(changelog)s" % 
             {"origver": version, "destver": destver, "changelog": changelog}, 
             cwd=kBuildDir, shell=True)
         subprocess.check_call("dpkg-source -b %(origname)s-%(version)s" % 
