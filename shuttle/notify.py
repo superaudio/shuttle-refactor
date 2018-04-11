@@ -41,11 +41,19 @@ class BearyChat():
         self.name = "bearychat"
         self.header = {'Content-Type': 'application/json; charset=UTF-8'}
         self.url = kwargs['bearychat_url']
+        if kwargs.get('bearychat_users'):
+            self.usermapper = json.loads(open(kwargs['bearychat_users']).read())
+        else:
+            self.usermapper = None
     
-    def notify(self, message_text, message_channel=[], timeout=15, 
+    def notify(self, message_text, author_email=None, message_channel=[], timeout=15, 
             message_attachments=None):
         
         srcdata = dict()
+        if author_email and self.usermapper:
+            author_name  = self.usermapper.get(author_email, 'Unknown')
+            message_text = "@%s " % author_name + message_text
+
         srcdata['text'] = message_text
         srcdata['markdown'] = "true"
         if message_channel:

@@ -43,6 +43,7 @@ class JobResource(APIResource):
     def post_rebuild(self, request):
         content = json.loads(request.content.read())
         id = content.get('id', 0)
+        force = content.get('force', False)
         def get_result(id):
             if Job.selectBy(id=id).count() != 0:
                 job = Job.selectBy(id=id)[0]
@@ -50,7 +51,11 @@ class JobResource(APIResource):
                     job.status = JobStatus.WAIT
                     message = "job is set rebuilded"
                 else:
-                    message = "job cannot set rebuilded"
+                    if force:
+                        job.status = JobStatus.WAIT
+                        message = "job force set rebuilded"
+                    else:
+                        message = "job cannot set rebuilded"
             else:
                 message = "no job is set rebuilded"
 

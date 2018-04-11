@@ -1,7 +1,7 @@
 {
 	"commit": {
 		"quilt": false,
-		"pkgver": "git describe --tags --long %(ref)s | sed s/-/+/g",
+		"pkgver":  "git describe --tags --long %(ref)s | awk -F'-' '{printf \"%%s+r%%s+%%s\",$1,$2,$3}'",
 		"dist": "experimental"
 	},
 	"release": {

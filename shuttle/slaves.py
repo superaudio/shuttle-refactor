@@ -150,9 +150,6 @@ class BuilderSlave():
                 archives.extend(content.get('archives'))
         extra_args['archives'] = archives
 
-        # notify build 
-        #message_text = "%(pkgname)s - %(pkgver)s to %(reponame)s [%(upload_status)s]" % kwargs
-        #Notify().notify('all', message_text)
         return self.proxy.build(buildid, builder, files, extra_args)
     
     def proxy_complete(self):
@@ -171,6 +168,25 @@ class BuilderSlave():
                 status = JobStatus.BUILD_OK
             else:
                 status = JobStatus.FAILED
+                # notify build
+                try:
+                    _package = job.package.dict()
+                    cwd = os.path.join(config['cache']['sources'], _package['pkgname'])
+                    command = "git show %s --pretty=%%ae | head -n 1" % _package['hashsum']
+                    status, email = functions.getstatusoutput(command, cwd=cwd)
+                    if status != 0:
+                        email = None
+                    message_text = "Build %(pkgname)s - %(pkgver)s to %(reponame)s" % _package
+                    message_text += " [Failed](%s/job/%s)" % (config['runtime']['url'], str(job.id))
+                    attachments_text = "Action: %(action)s\nHashsum: %(hashsum)s\n" % _package
+                    attachments = [{
+                        "text": attachments_text,
+                        "color": "#ffa500"
+                        }]
+                    Notify().notify('bearychat', message_text=message_text, 
+                        author_email=email, message_attachments=attachments)
+                except Exception as error:
+                    print(error)
                 
             self.complete(job, status)
     
@@ -299,10 +315,9 @@ class ShuttleBuilders(threading.Thread):
 
             status, _ = functions.getstatusoutput(command, env=env)
             if status != 0:
-                Log(status=False, section='task', message='upload tasks %(pkgname)s %(pkgver)s to %(reponame)' % package.dict())
+                Log(status=False, section='task', message='upload tasks %(pkgname)s %(pkgver)s to %(reponame)s' % package.dict())
                 package.upload_status = UploadStatus.UPLOAD_FAILED
             else:
-                Log(status=True, section='task', message='upload tasks %(pkgname)s %(pkgver)s to %(reponame)' % package.dict())
                 package.upload_status = UploadStatus.UPLOAD_OK
     
     def destroy_task(self, package):

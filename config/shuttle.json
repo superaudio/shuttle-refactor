@@ -22,7 +22,8 @@
     "notify": {
         "bearychat": {
             "enable": true,
-            "bearychat_url": "https://hook.bearychat.com/=bw5Bi/incoming/e35e89695fe08686f0671b6065fa2fdb"
+            "bearychat_url": "https://hook.bearychat.com/=bw5Bi/incoming/e35e89695fe08686f0671b6065fa2fdb",
+            "bearychat_users": "/tmp/cache/users.json"
         } 
     }
 }

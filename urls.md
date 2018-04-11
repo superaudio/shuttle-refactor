@@ -5,6 +5,10 @@
 ```
 curl -i -H 'Content-Type: application/json' -X POST --data-binary '{"action":"commit","pkgname":"dde-session-ui","reponame":"dde", "source":"https://cr.deepin.io/dde/dde-session-ui#branch=master", "build_args":["use_network"]}' http://127.0.0.1:5000/api/task/apply
 ```
+
+```
+curl -i -H 'Content-Type: application/json' -X POST --data-binary '{"action":"release-candidate","pkgname":"dde-session-ui","reponame":"dde", "version":"2.0.0", "source":"https://cr.deepin.io/dde/dde-session-ui#commit=xxxxxx", "build_args":["use_network"]}' http://127.0.0.1:5000/api/task/apply
+```
 Result:
 ```
 {"triggered": 12, "reponame": "dde", "build_args": ["use_network", "buildtype=dde"], "status_changed": "18-04-08 04:50:44 PM", "expired": "18-04-08 07:32:29 AM", "id": 1, "pkgver": "4.3.7+3+g2509fcd", "pkgname": "dde-session-ui", "hashsum": "2509fcd25c60e3017f00f401ef1c2bebf4e76850", "priority": null, "upload_status": "UNKNOWN", "action": "commit"}
