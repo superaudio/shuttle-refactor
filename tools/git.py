@@ -59,7 +59,7 @@ class Dch():
 
 
 class GitBuilder():
-    def __init__(self, pkgname, config, cache_dir):
+    def __init__(self, pkgname, reponame, config, cache_dir):
         '''Config is a dict, like as
         {
             "source": "https://cr.deepin.io/dde/dde-daemon#branch=master",
@@ -67,6 +67,7 @@ class GitBuilder():
         }
         '''
         self.pkgname = pkgname
+        self.reponame = reponame
         self.config  = config
         self._cache = cache_dir
     
@@ -91,6 +92,7 @@ class GitBuilder():
         proc = subprocess.Popen(commands, shell=True, env=env, cwd=cwd, 
             stderr=subprocess.PIPE, stdout=subprocess.PIPE, stdin=None)
         kill_proc = lambda p: p.kill()
+        timeout = 300
         timer = Timer(timeout, kill_proc, [proc])
         timer.start()
         while proc.poll() is None:
@@ -98,15 +100,16 @@ class GitBuilder():
         timer.cancel()
 
         status = proc.returncode
-        if status != 0:
-            raise ShuttleGitException("Subprocess  \"%s\" Error: %d at %s\n"  % (commands, status, cwd))
-        
+
         stdout = proc.stdout.read()
         stderr = proc.stderr.read()
         if stdout.endswith('\n'):
             stdout = stdout[:-1]
         if stderr.endswith('\n'):
             stderr = stderr[:-1]
+
+        if status != 0:
+            raise ShuttleGitException("Subprocess  \"%s\" Error: %d \n %s\n"  % (commands, status, stderr))
 
         if extended_output:
             return (status, stdout, stderr)
@@ -174,11 +177,14 @@ class GitBuilder():
         command = command % {'ref': ref}
         try:
             stdout = self.execute(command, cwd=cwd)
+            if stdout == "":
+                raise
+
         except Exception as e:
             ver = "0.0"
             rev = self.execute('git rev-list --count master', cwd=cwd)
             sha = self.execute(['git rev-parse --short master'], cwd=cwd)
-            stdout = '%(ver)s+r%(rev)s+%(sha)s' % {'ver': '0.0', 'rev':rev, 'sha': sha}
+            stdout = '%(ver)s+r%(rev)s+g%(sha)s' % {'ver': '0.0', 'rev':rev, 'sha': sha}
 
         return stdout
 
@@ -280,7 +286,10 @@ class GitBuilder():
         self.check_call("mv %s %s" % (self.pkgname, orig_name), cwd=temp_dir)
 
         work_dir = os.path.join(temp_dir, orig_name)
-        if config[action].get('quilt', False):
+        if config[action].get('quilt', False) and 'stable' in self.reponame:
+            #TODO: fix pkgver with binnmu
+            pkgver = _pkgver + '-1'+'+stable'
+        elif config[action].get('quilt', False) and 'community' in self.reponame:
             #TODO: fix pkgver with binnmu
             pkgver = _pkgver + '-1'
         else:
@@ -315,6 +324,7 @@ class GitBuilder():
         try:
             _dir, _files, _kwargs = self._archive(temp_dir, action=action, ref=ref, version=version)
         except Exception as e:
+            print(e)
             os.system("rm -rf %s" % temp_dir)
             sys.exit(1)
 
@@ -331,6 +341,7 @@ if __name__ == "__main__":
     parser.add_argument("--cachedir", default="/tmp/cache")
     parser.add_argument("--action", required=True, help="[release, commit, release-candidate] is support")
     parser.add_argument("--version", help="set the fake version.")
+    parser.add_argument("--reponame", required=True)
 
     args = parser.parse_args()
     config = {
@@ -338,6 +349,6 @@ if __name__ == "__main__":
         "debian": args.debian
     }
 
-    g = GitBuilder(pkgname=args.pkgname, config=config, cache_dir=args.cachedir)
+    g = GitBuilder(pkgname=args.pkgname, reponame=args.reponame, config=config, cache_dir=args.cachedir)
     result = g.archive(action=args.action, version=args.version)
     print(result)

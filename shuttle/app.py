@@ -38,7 +38,7 @@ if __name__ == "__main__":
     from twisted.python import log
     import sys
 
-    #log.startLogging(sys.stdout)
+    log.startLogging(sys.stdout)
 
     def handle_sigterm(signum, stack):
         print("Interrupted!. Exiting.")

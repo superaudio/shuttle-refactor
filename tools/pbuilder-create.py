@@ -52,8 +52,10 @@ class PBuilder():
         state = None
         print(cmd)
 
+        network_env = os.environ.copy()
+        network_env["USENETWORK"] = "yes"
         try:
-            proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdin=None)
+            proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdin=None, env=network_env)
         except Exception as err:
             state = 1
 

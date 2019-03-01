@@ -2,7 +2,8 @@
     "cache": {
         "base"    : "/srv/shuttle-refactor/cache",
         "sources" : "/srv/shuttle-refactor/cache/git-repo",
-        "tasks"   : "/srv/shuttle-refactor/cache/tasks"
+        "tasks"   : "/srv/shuttle-refactor/cache/tasks",
+        "repos"   : "/srv/shuttle-refactor/cache/repos"
     },
     "log": {
         "file": "/srv/shuttle-refactor/shuttle.log",
@@ -10,9 +11,9 @@
     },
     "runtime": {
         "ip"     : "0.0.0.0",
-        "port"   : 5001,
-        "repo_url" : "http://10.0.13.190:5001/cache/repos",
-        "url": "http://10.0.10.29:5001",
+        "port"   : 5000,
+        "repo_url" : "http://10.0.10.32:5000/cache/repos",
+        "url": "http://10.0.10.32:5000",
         "debug"  : true,
         "title"  : "Shuttle",
         "expired_days": 7,
@@ -24,6 +25,13 @@
             "enable": true,
             "bearychat_url": "https://hook.bearychat.com/=bw5Bi/incoming/e35e89695fe08686f0671b6065fa2fdb",
             "bearychat_users": "/srv/shuttle-refactor/bearychat.json"
-        } 
+        },
+        "deepinworknoticebot": {
+            "enable": true,
+            "dwnb_url": "http://sh.deepin.io:6500/webhook/shuttle2mm/",
+            "dwnb_key": "Y2RqM2ZiMzlwdHloM25kMTU5amR0NWZhYXIK",
+            "mail2users": "/tmp/cache/users.json"
+         } 
+
     }
 }

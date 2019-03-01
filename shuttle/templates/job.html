@@ -36,7 +36,7 @@
                 <span class="label label-default">{{ job.status }}</span>
               {% endif %}           
               </h4>
-              {% if job.build_args|length > 1 %}
+              {% if job.build_args|length > 0 %}
               <h4>Addition Args:
                 {% for arg in job.build_args %}
                 <span class="label label-success">{{ arg }}</span>

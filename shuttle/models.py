@@ -93,14 +93,14 @@ class Package(threading.Thread, sqlobject.SQLObject):
     build_args     = sqlobject.StringCol(default=None)
     
     hashsum        = sqlobject.StringCol(default=None)
-    expired        = sqlobject.DateTimeCol(default=sqlobject.DateTimeCol.now())
+    expired        = sqlobject.DateTimeCol(default=sqlobject.DateTimeCol.now)
 
     priority       = sqlobject.StringCol(default=None)
     jobs           = sqlobject.MultipleJoin('Job', joinColumn='package_id')
 
     triggered      = sqlobject.IntCol(default=1)
     upload_status  = sqlobject.IntCol(default=UploadStatus.UNKNOWN)
-    status_changed = sqlobject.DateTimeCol(default=sqlobject.DateTimeCol.now())
+    status_changed = sqlobject.DateTimeCol(default=sqlobject.DateTimeCol.now)
 
     
     deps = sqlobject.RelatedJoin('Package', joinColumn='pkga', otherColumn='pkgb')

@@ -465,14 +465,17 @@ var flower = (function () {
         var vars = query.split("&");
         var page = 1;
         var totalPages = 1;
+		var pkgname = "";
+		var data = {};
         for (var i=0;i<vars.length;i++) {
             var pair = vars[i].split("=");
             if(pair[0] == "page"){ page = pair[1];}
+			else {data[pair[0]] = pair[1]}
         }
         $.ajax({
             type: "get",
             url: "/api/task/total",
-            data: {},
+            data: data,
             dataType: 'json',
             async: false,
             success: function (data) {
@@ -485,7 +488,12 @@ var flower = (function () {
             numberOfPages: 5,
             totalPages: totalPages,
             pageUrl: function(type, page, current){
-                return "/tasks?page=" + page; }
+				if ('pkgname' in data){
+					return "/tasks?pkgname=" + data['pkgname'] + "&page=" + page;
+				} else {
+					return "/tasks?page=" + page; 
+				}
+				}
             };
         $("#pagination").bootstrapPaginator(options);
         $('#tasks-table').DataTable({
@@ -500,7 +508,7 @@ var flower = (function () {
             order: [
                 [ 0, "desc"]
             ],
-            ajax: url_prefix() + '/api/task/list/' + page,
+            ajax: {"url": url_prefix() + '/api/task/list/' + page, data: data},
             oSearch: {
                 "sSearch": $.urlParam('state') ? 'state:' + $.urlParam('state') : ''
             },
@@ -523,7 +531,7 @@ var flower = (function () {
                 data: 'pkgname',
                 visible: isColumnVisible('Pkgname'),
                 render: function (data, type, full, meta) {
-                    return data;
+                    return '<a href=/tasks?pkgname=' + data + '>' + data + '</a>';
                 }
             }, {
                 targets: 3,
@@ -547,20 +555,6 @@ var flower = (function () {
                 }
             }, {
                 targets: 6,
-                data: 'build_args',
-                orderable: false,
-                render: function (data, type, full, meta) {
-                    if (Array.isArray(data)) {
-                        var result ="";
-                        for (var arg in data){
-                            result += '<span class="label label-default">' + data[arg] + '</span> ';
-                        }
-                        return result;
-                    }
-                    return '<span class="label label-default">' + data + '</span>';
-                }
-            }, {
-                targets: 7,
                 data: 'upload_status',
                 render: function (data, type, full, meta) {
                     switch (data) {
@@ -574,13 +568,13 @@ var flower = (function () {
                 }
 
             }, {
-                targets: 8,
+                targets: 7,
                 data: 'status_changed',
                 render: function (data, type, full, meta) {
                     return data;
                 }
             }, {
-                targets: 9,
+                targets: 8,
                 data: 'tasks',
                 orderable: false,
                 render: function (data, type, full, meta) {

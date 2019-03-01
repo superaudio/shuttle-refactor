@@ -163,11 +163,16 @@ class BuilderSlave():
         
         if self.status.get('builder_status', None) == 'BuilderStatus.WAITING':
             buildid = self.status.get('build_id', None)
-            job = Job.selectBy(id=buildid)[0]
+            try:
+                job = Job.selectBy(id=buildid)[0]
+            except Exception as e:
+                print(e)
+                return
+
             if self.status.get('build_status') == "BuildStatus.OK":
-                status = JobStatus.BUILD_OK
+                job_status = JobStatus.BUILD_OK
             else:
-                status = JobStatus.FAILED
+                job_status = JobStatus.FAILED
                 # notify build
                 try:
                     _package = job.package.dict()
@@ -176,19 +181,30 @@ class BuilderSlave():
                     status, email = functions.getstatusoutput(command, cwd=cwd)
                     if status != 0:
                         email = None
+
+                    command = "git log -1 %s --pretty=%%s | head -n 1" % _package['hashsum']
+                    status, subject = functions.getstatusoutput(command, cwd=cwd)
+                    if status != 0:
+                        subject = None
+
                     message_text = "Build %(pkgname)s - %(pkgver)s to %(reponame)s" % _package
                     message_text += " [Failed](%s/job/%s)" % (config['runtime']['url'], str(job.id))
                     attachments_text = "Action: %(action)s\nHashsum: %(hashsum)s\n" % _package
+                    if subject:
+                        attachments_text += "Subject: %s\n" % subject
+
                     attachments = [{
                         "text": attachments_text,
                         "color": "#ffa500"
                         }]
-                    Notify().notify('bearychat', message_text=message_text, 
+                    #Notify().notify('bearychat', message_text=message_text,
+                    #    author_email=email, message_attachments=attachments)
+                    Notify().notify('deepinworknoticebot', message_text=message_text,
                         author_email=email, message_attachments=attachments)
                 except Exception as error:
                     print(error)
                 
-            self.complete(job, status)
+            self.complete(job, job_status)
     
     def complete(self, job, status):
         files = []
@@ -200,7 +216,7 @@ class BuilderSlave():
         queue.drain = functools.partial(self.upload_done, job, status)
         basepath = os.path.join(config['cache']['tasks'],  str(job.package.id), '%s-%s' % (job.dist, job.arch))
         if os.path.exists(basepath):
-            os.system("mv %s %s~%d" % (basepath, basepath, int(job.package.triggered)-1))
+            shutil.rmtree(basepath)
         
         datas = []
         for file in files:
@@ -325,15 +341,15 @@ class ShuttleBuilders(threading.Thread):
         if os.path.exists(task_cache):
             shutil.rmtree(task_cache)
 
-        for job in Job.selectBy(packageID=package.id):
-            job.destroySelf()
-        package.destroySelf()
+        #for job in Job.selectBy(packageID=package.id):
+        #    job.destroySelf()
+        #package.destroySelf()
     
     def get_expired_task(self):
         expired_days = config['runtime'].get('expired_days', 7)
         now = sqlobject.DateTimeCol.now()
         for package in Package.selectBy():
-            if now - package.expired > timedelta(days=expired_days):
+            if now - package.status_changed > timedelta(days=expired_days):
                 self.destroy_task(package)
 
     def loop(self):
