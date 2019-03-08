@@ -286,12 +286,15 @@ class GitBuilder():
         self.check_call("mv %s %s" % (self.pkgname, orig_name), cwd=temp_dir)
 
         work_dir = os.path.join(temp_dir, orig_name)
-        if config[action].get('quilt', False) and 'stable' in self.reponame:
+        if config[action].get('quilt', False) and 'stable' in self.reponame and 'community' in self.reponame:
             #TODO: fix pkgver with binnmu
-            pkgver = _pkgver + '-1'+'+stable'
+            pkgver = _pkgver + '-1'+'+comsta'
         elif config[action].get('quilt', False) and 'community' in self.reponame:
             #TODO: fix pkgver with binnmu
             pkgver = _pkgver + '-1'
+        elif config[action].get('quilt', False) and 'stable' in self.reponame:
+            #TODO: fix pkgver with binnmu
+            pkgver = _pkgver + '-1'+'+stable'
         else:
             pkgver = _pkgver
 
