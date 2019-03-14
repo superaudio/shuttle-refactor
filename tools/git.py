@@ -289,6 +289,9 @@ class GitBuilder():
         if config[action].get('quilt', False) and 'stable' in self.reponame and 'community' in self.reponame:
             #TODO: fix pkgver with binnmu
             pkgver = _pkgver + '-1'+'+comsta'
+        elif config[action].get('quilt', False) and 'community' in self.reponame and "kwin" in self.pkgname:
+            #TODO: fix pkgver with binnmu
+            pkgver = '4:'+_pkgver + '-1'
         elif config[action].get('quilt', False) and 'community' in self.reponame:
             #TODO: fix pkgver with binnmu
             pkgver = _pkgver + '-1'
