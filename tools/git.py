@@ -272,8 +272,15 @@ class GitBuilder():
             _pkgver = version
         else:
             _pkgver = self.get_release_version(ref=revision, command=command, cwd=self.source_cache)
-
-        if config[action].get('quilt', False):
+        if ":" in _pkgver:
+            _pkgver2 = _pkgver.split(":")[1]
+            if config[action].get('quilt', False):
+                #TODO: get pkgver with '-%d'
+                command = "git archive --format=tar" 
+                command += " --prefix=%(source)s-%(pkgver)s/ %(revision)s | xz > %(tempdir)s/%(source)s_%(pkgver)s.orig.tar.xz" % \
+                    {'source': self.pkgname, 'pkgver': _pkgver2, 'tempdir': temp_dir, 'revision': revision}
+                self.check_call(command, cwd=self.source_cache)
+        elif config[action].get('quilt', False):
             #TODO: get pkgver with '-%d'
             command = "git archive --format=tar" 
             command += " --prefix=%(source)s-%(pkgver)s/ %(revision)s | xz > %(tempdir)s/%(source)s_%(pkgver)s.orig.tar.xz" % \

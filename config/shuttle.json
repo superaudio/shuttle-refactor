@@ -28,7 +28,7 @@
         },
         "deepinworknoticebot": {
             "enable": true,
-            "dwnb_url": "http://10.0.10.10:9080/webhook/shuttle2mm/",
+            "dwnb_url": "http://10.0.10.10:9080/webhook/shuttle2mm",
             "dwnb_key": "Y2RqM2ZiMzlwdHloM25kMTU5amR0NWZhYXIK",
             "mail2users": "/tmp/cache/users.json"
          } 
