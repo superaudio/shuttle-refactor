@@ -59,7 +59,13 @@ def prepare_source():
         origname = dscfile.split('_')[0]
         subprocess.check_call("rm -f %s" % dscfile, shell=True, cwd=kBuildDir)
 
-        if '-' in version:
+        if '-' in version and 'community' in basetgz and 'stable' in basetgz:
+            version = version.split('-')[0]
+            destver = "%s-%d+comsta" % (version, triggered)
+        elif '-' in version and 'stable' in basetgz:
+            version = version.split('-')[0]
+            destver = "%s-%d+stable" % (version, triggered)
+        elif '-' in version and 'community' in basetgz:
             version = version.split('-')[0]
             destver = "%s-%d" % (version, triggered)
         else:

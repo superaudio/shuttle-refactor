@@ -1,7 +1,7 @@
 {
 	"commit": {
 		"dist": "experimental",
-		"arches": ["amd64"]
+		"arches": ["amd64","mips64el","sw_64", "arm64"]
 	},
 	"release": {
 		"dist": "unstable",
@@ -10,6 +10,6 @@
 	"release-candidate": {
 		"division": true,
 		"dist": "unstable",
-		"arches": ["amd64", "i386", "source"]
+		"arches": ["amd64", "i386", "mips64el", "sw_64", "arm64", "source"]
 	}
 }
